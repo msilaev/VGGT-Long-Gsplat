@@ -26,15 +26,7 @@ System Environment：
     cuDNN Version: 9.1.0
     NVIDIA Drivers: 555.42.06
     Conda version: 23.9.0 (Miniconda)
-
-Compilers & Build Tools:
-    NVIDIA CUDA Compiler (nvcc): V11.8.89
-    C++ Compiler: GCC/G++ 11.4.0
-    GNU Make Version: 4.3
-    Cmake Version: 3.22.1
 ```
-
-As part of the project code relies on `CUDA/C++`, please ensure your compilation environment is properly workable.
 
 ### 📦 2 - Environment Setup 
 
