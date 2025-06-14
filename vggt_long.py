@@ -2,7 +2,6 @@ import numpy as np
 
 import os
 import glob
-import time
 import threading
 import torch
 from tqdm.auto import tqdm
@@ -14,7 +13,7 @@ except ImportError:
     print("onnxruntime not found. Sky segmentation may not work.")
 
 from loop_closure.retrieval.retrieval_dbow import RetrievalDBOW
-from visual_util import segment_sky, download_file_from_url
+from loop_utils.visual_util import segment_sky, download_file_from_url
 from vggt.models.vggt import VGGT
 from vggt.utils.load_fn import load_and_preprocess_images
 from vggt.utils.geometry import closed_form_inverse_se3, unproject_depth_map_to_point_map
@@ -22,8 +21,9 @@ from vggt.utils.pose_enc import pose_encoding_to_extri_intri
 
 import numpy as np
 
-from sim3loop import Sim3LoopOptimizer
-from sim3utils import *
+from loop_utils.sim3loop import Sim3LoopOptimizer
+from loop_utils.sim3utils import *
+from datetime import datetime
 
 from PIL import Image
 
@@ -447,19 +447,9 @@ class VGGT_Long:
         print(f"Saved disk space: {total_space/1024/1024/1024:.4f} GiB")
 
 
-from datetime import datetime
-
 if __name__ == '__main__':
 
-    # image_dir = '/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/400frames/image_0'
-    # image_dir = '/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/900frames'
-    # image_dir = '/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/1600frames'
     image_dir = '/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/06/image_2'
-    # image_dir = '/media/deng/Data/kitti360Dataset/KITTI-360/data_2d_raw/2013_05_28_drive_0000_sync/image_00/data_rect'
-    # image_dir = '/media/deng/Data/iPhoneDataset/stairs-60hz'
-    # image_dir = '/media/deng/Data/iPhoneDataset/stairs-down'
-    # image_dir = '/media/deng/Data/iPhoneDataset/frames-stairs/color-400frames'
-    # image_dir = '/media/deng/Data/iPhoneDataset/corridor-long'
 
     path = image_dir.split("/")
     current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
