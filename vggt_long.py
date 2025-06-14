@@ -1,4 +1,5 @@
 import numpy as np
+import argparse
 
 import os
 import glob
@@ -449,8 +450,12 @@ class VGGT_Long:
 
 if __name__ == '__main__':
 
-    image_dir = '/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/06/image_2'
+    parser = argparse.ArgumentParser(description='VGGT-Long')
+    parser.add_argument('--image_dir', type=str, required=True,
+                        help='Image path')
+    args = parser.parse_args()
 
+    image_dir = args.image_dir
     path = image_dir.split("/")
     current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     exp_dir = './exps'
