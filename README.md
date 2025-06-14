@@ -3,6 +3,9 @@
 <h1 align="center">VGGT-Long: Chunk it, Loop it, Align it – Pushing VGGT’s Limits on Long RGB Sequences</h1>
 </p>
 
+![KITTI](./assets/kitti.png)
+![iPhone](./assets/iphone.png)
+
 ### **Change Log**
 
 `[14 Jun 2025]` GitHub code release.
@@ -47,7 +50,7 @@ pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https
 # Verified to work with CUDA 11.8 and torch 2.2.0
 ```
 
-Then install other dependencies exactly same as [VGGT](https://github.com/facebookresearch/vggt)
+Then install other dependencies exactly the same as [VGGT](https://github.com/facebookresearch/vggt)
 
 ```bash
 pip install -r requirements.txt
