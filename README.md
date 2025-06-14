@@ -113,7 +113,7 @@ ls -l ORBvoc.txt
 
 
 ```bash
-python vggt-long.py --image_dir ./path/to/your/image_sequence
+python vggt_long.py --image_dir ./path/to/your/image_sequence
 ```
 
 ## Acknowledgements
