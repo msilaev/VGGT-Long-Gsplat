@@ -1,0 +1,20 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/vggt_long.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args" : [ "--image_dir", "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/image_2"],
+            // "args" : [ "--image_dir", "/media/deng/Data/iPhoneDataset/stairs-wide-60hz"],
+            // "args" : [ "--image_dir", "/media/deng/Data/ScanNet/image/color"],
+            "subProcess": true
+        }
+    ]
+}

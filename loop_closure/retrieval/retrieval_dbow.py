@@ -11,7 +11,7 @@ except:
     raise ModuleNotFoundError("Couldn't load dpretrieval. It may not be installed.")
 from collections import OrderedDict
 
-from logging_utils import Log
+# from logging_utils import Log
 
 NMS = 60 # Slow motion gets removed from keyframes anyway. So this is really the keyframe distance
 

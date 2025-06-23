@@ -60,8 +60,8 @@ class LongSeqResult:
 
 class VGGT_Long:
     def __init__(self, image_dir, save_dir):
-        self.chunk_size = 70
-        self.overlap = 40
+        self.chunk_size = 60
+        self.overlap = 25
         self.conf_threshold = 1.5
         self.seed = 42
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -88,7 +88,7 @@ class VGGT_Long:
         self.model = VGGT()
         # _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
         # model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
-        _URL = "./model.pt"
+        _URL = "/media/deng/Data/VGGT-Long (copy)/model.pt"
         state_dict = torch.load(_URL, map_location='cuda')
         self.model.load_state_dict(state_dict, strict=False)
 
@@ -121,7 +121,7 @@ class VGGT_Long:
         self.loop_enable = True
 
         if self.loop_enable:
-            self.retrieval = RetrievalDBOW()
+            self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long (copy)/ORBvoc.txt")
 
         print('init done.')
 
@@ -394,7 +394,7 @@ class VGGT_Long:
         print(f"Loading images from {self.img_dir}...")
         self.img_list = sorted(glob.glob(os.path.join(self.img_dir, "*.jpg")) + 
                                 glob.glob(os.path.join(self.img_dir, "*.png")))
-        print(self.img_list)
+        # print(self.img_list)
         if len(self.img_list) == 0:
             raise ValueError(f"[DIR EMPTY] No images found in {self.img_dir}!")
         print(f"Found {len(self.img_list)} images")
