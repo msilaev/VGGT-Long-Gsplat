@@ -13,6 +13,7 @@ try:
 except ImportError:
     print("onnxruntime not found. Sky segmentation may not work.")
 
+from LoopModels.LoopModel import LoopDetector
 from loop_closure.retrieval.retrieval_dbow import RetrievalDBOW
 from loop_utils.visual_util import segment_sky, download_file_from_url
 from vggt.models.vggt import VGGT
@@ -67,6 +68,7 @@ class VGGT_Long:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.dtype = torch.bfloat16 if torch.cuda.get_device_capability()[0] >= 8 else torch.float16
         self.sky_mask = False
+        self.useDBoW = False
 
         self.img_dir = image_dir
         self.img_list = None
@@ -88,7 +90,7 @@ class VGGT_Long:
         self.model = VGGT()
         # _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
         # model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
-        _URL = "/media/deng/Data/VGGT-Long (copy)/model.pt"
+        _URL = "./weights/model.pt"
         state_dict = torch.load(_URL, map_location='cuda')
         self.model.load_state_dict(state_dict, strict=False)
 
@@ -121,32 +123,51 @@ class VGGT_Long:
         self.loop_enable = True
 
         if self.loop_enable:
-            self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long (copy)/ORBvoc.txt")
+            if self.useDBoW:
+                self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long (copy)/ORBvoc.txt")
+            else:
+                loop_info_save_path = os.path.join(save_dir, "loop_closures.txt")
+                self.loop_detector = LoopDetector(
+                    image_dir=image_dir,
+                    ckpt_path='./weights/dino_salad.ckpt',
+                    image_size=[336, 336],
+                    batch_size=32,
+                    similarity_threshold=0.7,
+                    top_k=5,
+                    use_nms=True,
+                    nms_threshold=25,
+                    output=loop_info_save_path
+                )
 
         print('init done.')
 
     def get_loop_pairs(self):
-        
-        for frame_id, img_path in tqdm(enumerate(self.img_list)):
-            image_ori = np.array(Image.open(img_path))
-            if len(image_ori.shape) == 2:
-                # gray to rgb
-                image_ori = cv2.cvtColor(image_ori, cv2.COLOR_GRAY2RGB)
 
-            frame = image_ori # (height, width, 3)
-            frame = cv2.resize(frame, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
-            self.retrieval(frame, frame_id)
-            cands = self.retrieval.detect_loop(thresh=0.034, num_repeat=3)
+        if self.useDBoW: # DBoW2
+            for frame_id, img_path in tqdm(enumerate(self.img_list)):
+                image_ori = np.array(Image.open(img_path))
+                if len(image_ori.shape) == 2:
+                    # gray to rgb
+                    image_ori = cv2.cvtColor(image_ori, cv2.COLOR_GRAY2RGB)
 
-            if cands is not None:
-                (i, j) = cands # e.g. cands = (812, 67)
-                self.retrieval.confirm_loop(i, j)
-                self.retrieval.found.clear()
-                self.loop_list.append(cands)
+                frame = image_ori # (height, width, 3)
+                frame = cv2.resize(frame, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
+                self.retrieval(frame, frame_id)
+                cands = self.retrieval.detect_loop(thresh=0.034, num_repeat=3)
 
-            self.retrieval.save_up_to(frame_id)
+                if cands is not None:
+                    (i, j) = cands # e.g. cands = (812, 67)
+                    self.retrieval.confirm_loop(i, j)
+                    self.retrieval.found.clear()
+                    self.loop_list.append(cands)
 
-        # self.loop_list = remove_duplicates(self.loop_list)
+                self.retrieval.save_up_to(frame_id)
+
+            self.loop_list = remove_duplicates(self.loop_list)
+
+        else: # DNIO v2
+            self.loop_detector.run()
+            self.loop_list = self.loop_detector.get_loop_list()
 
     def process_single_chunk(self, range_1, chunk_idx=None, range_2=None, is_loop=False):
         start_idx, end_idx = range_1
@@ -401,7 +422,11 @@ class VGGT_Long:
 
         if self.loop_enable:
             self.get_loop_pairs()
-        self.retrieval.close() # Save CPU Memory
+
+        if self.useDBoW:
+            self.retrieval.close() # Save CPU Memory
+        else:
+            del self.loop_detector # Save GPU Memory
 
         self.process_long_sequence()
 

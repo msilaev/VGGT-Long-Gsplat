@@ -193,11 +193,15 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+__pycache__/
+.vscode/
 
 # vggt-long
 /exps/*
-.npy
-.ply
-.pt
-.onnx
+*.ckpt
+*.pth
+*.npy
+*.ply
+*.pt
+*.onnx
 ORBvoc.txt

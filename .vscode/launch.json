@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/vggt_long.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args" : [ "--image_dir", "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/00/image_2"],
+            "args" : [ "--image_dir", "/media/deng/Data/KITTIdataset/data_odometry_color/dataset/sequences/06/image_2"],
             // "args" : [ "--image_dir", "/media/deng/Data/iPhoneDataset/stairs-wide-60hz"],
             // "args" : [ "--image_dir", "/media/deng/Data/ScanNet/image/color"],
             "subProcess": true
