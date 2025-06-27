@@ -3,15 +3,6 @@ import os
 import numpy as np
 import trimesh
 
-import numpy as np
-import random
-import os
-import numpy as np
-
-import os
-import numpy as np
-import random
-
 import glob
 import bisect
 
@@ -106,6 +97,7 @@ def align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold):
         conf_threshold, 
         s, R, t
     )
+    print(f'Mean error: {mean_error}')
 
     return s, R, t
 
@@ -373,7 +365,7 @@ def save_ply(points, colors, filename):
 def find_chunk_index(chunks, idx):
     """
     Find the 0-based chunk index that contains the given index idx.
-    chunks: List of (begin_idx, end_idx) tuples.
+    chunks: List of (begin_idx, end_idx).
     idx: The index to search for.
     Returns the 0-based chunk index.
     """
@@ -390,24 +382,24 @@ def get_frame_range(chunk, idx, half_window=10):
     """
     Calculate the frame range centered at idx with half_window frames on each side within chunk boundaries.
     If near boundaries, take 2 * half_window frames starting from the boundary.
-    chunk: Tuple (begin_idx, end_idx).
+    chunk: (begin_idx, end_idx).
     idx: Center index.
-    half_window: Number of frames to take on each side of center index (default 10, meaning 21 frames total).
-    Returns (start, end) tuple.
+    half_window: Number of frames to take on each side of center index.
+    Returns (start, end).
     """
     begin, end = chunk
-    window_size = 2 * half_window # Total window size
-    # Check if near left boundary
+    window_size = 2 * half_window
+
     if idx - half_window < begin:
         start = begin
         end_candidate = begin + window_size
         end = min(end, end_candidate)
-    # Check if near right boundary
+
     elif idx + half_window > end:
         end_candidate = end
         start_candidate = end - window_size
         start = max(begin, start_candidate)
-    # Normal case
+
     else:
         start = idx - half_window
         end = idx + half_window
@@ -477,9 +469,8 @@ def merge_ply_files(input_dir, output_path):
     idx_file = 0
     all_file_num = len(input_files)
     
-    # Count total vertices
     total_vertices = 0
-    for file in input_files:
+    for file in input_files: # Count total vertices
         with open(file, 'rb') as f:
             for line in f:
                 if line.startswith(b'element vertex'):
@@ -512,7 +503,6 @@ def merge_ply_files(input_dir, output_path):
                     if line.startswith(b'end_header'):
                         in_header = False
                 
-                # Directly copy binary data
                 chunk_size = 1024 * 1024 * 10  # 10MB
                 while True:
                     chunk = in_f.read(chunk_size)
@@ -522,3 +512,142 @@ def merge_ply_files(input_dir, output_path):
     
     print(f"Merge completed! Total points: {total_vertices}")
     print(f"Output file: {output_path}")
+
+
+
+def weighted_estimate_sim3(source_points, target_points, weights):
+    """
+    source_points:  (Nx3)
+    target_points:  (Nx3)
+    :weights:  (N,) [0,1]
+    """
+    total_weight = np.sum(weights)
+    if total_weight < 1e-6:
+        raise ValueError("Total weight too small for meaningful estimation")
+    
+    normalized_weights = weights / total_weight
+
+    mu_src = np.sum(normalized_weights[:, None] * source_points, axis=0)
+    mu_tgt = np.sum(normalized_weights[:, None] * target_points, axis=0)
+
+    src_centered = source_points - mu_src
+    tgt_centered = target_points - mu_tgt
+
+    scale_src = np.sqrt(np.sum(normalized_weights * np.sum(src_centered**2, axis=1)))
+    scale_tgt = np.sqrt(np.sum(normalized_weights * np.sum(tgt_centered**2, axis=1)))
+    s = scale_tgt / scale_src
+
+    weighted_src = (s * src_centered) * np.sqrt(normalized_weights)[:, None]
+    weighted_tgt = tgt_centered * np.sqrt(normalized_weights)[:, None]
+    
+    H = weighted_src.T @ weighted_tgt
+
+    U, _, Vt = np.linalg.svd(H)
+    R = Vt.T @ U.T
+    
+    if np.linalg.det(R) < 0:
+        Vt[2, :] *= -1
+        R = Vt.T @ U.T
+
+    t = mu_tgt - s * R @ mu_src
+    return s, R, t
+
+
+
+# ================================
+
+def huber_loss(r, delta):
+    abs_r = np.abs(r)
+    return np.where(abs_r <= delta, 0.5 * r**2, delta * (abs_r - 0.5 * delta))
+
+def robust_weighted_estimate_sim3(src, tgt, init_weights, delta=0.1, max_iters=20, tol=1e-12):
+    """
+    src:  (Nx3)
+    tgt:  (Nx3)
+    init_weights:  (N,)
+    """
+    s, R, t = weighted_estimate_sim3(src, tgt, init_weights)
+    prev_error = float('inf')
+    
+    for iter in range(max_iters):
+
+        transformed = s * (src @ R.T) + t
+        residuals = np.linalg.norm(tgt - transformed, axis=1)  # (N,)
+        print(f'Residuals: {np.mean(residuals)}')
+        
+        abs_res = np.abs(residuals)
+        huber_weights = np.ones_like(residuals)
+        large_res_mask = abs_res > delta
+        huber_weights[large_res_mask] = delta / abs_res[large_res_mask]
+        
+        combined_weights = init_weights * huber_weights
+        
+        combined_weights /= (np.sum(combined_weights) + 1e-12)
+        
+        s_new, R_new, t_new = weighted_estimate_sim3(src, tgt, combined_weights)
+
+        param_change = np.abs(s_new - s) + np.linalg.norm(t_new - t)
+        rot_angle = np.arccos(min(1.0, max(-1.0, (np.trace(R_new @ R.T) - 1)/2)))
+        current_error = np.sum(huber_loss(residuals, delta) * init_weights)
+        
+        if (param_change < tol and rot_angle < np.radians(0.1)) or \
+           (abs(prev_error - current_error) < tol * prev_error):
+            break
+
+        s, R, t = s_new, R_new, t_new
+        prev_error = current_error
+    
+    return s, R, t
+
+
+# ================================
+
+def weighted_align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold):
+    """ point_map2 -> point_map1"""
+    b1, _, _, _ = point_map1.shape
+    b2, _, _, _ = point_map2.shape
+    b = min(b1, b2)
+    
+    aligned_points1 = []
+    aligned_points2 = []
+    confidence_weights = []
+
+    for i in range(b):
+        mask1 = conf1[i] > conf_threshold
+        mask2 = conf2[i] > conf_threshold
+        valid_mask = mask1 & mask2
+
+        idx = np.where(valid_mask)
+        if len(idx[0]) == 0:
+            continue
+
+        pts1 = point_map1[i][idx]
+        pts2 = point_map2[i][idx]
+
+        combined_conf = np.sqrt(conf1[i][idx] * conf2[i][idx])
+        
+        aligned_points1.append(pts1)
+        aligned_points2.append(pts2)
+        confidence_weights.append(combined_conf)
+
+    if len(aligned_points1) == 0:
+        raise ValueError("No matching point pairs were found!")
+
+    all_pts1 = np.concatenate(aligned_points1, axis=0)
+    all_pts2 = np.concatenate(aligned_points2, axis=0)
+    all_weights = np.concatenate(confidence_weights, axis=0)
+
+    print(f"The number of corresponding points matched: {all_pts1.shape[0]}")
+    
+    s, R, t = robust_weighted_estimate_sim3(all_pts2, all_pts1, all_weights)
+
+    mean_error = compute_alignment_error(
+        point_map1, conf1, 
+        point_map2, conf2, 
+        conf_threshold, 
+        s, R, t
+    )
+    print(f'Mean error: {mean_error}')
+
+    return s, R, t
+

@@ -34,14 +34,11 @@ def solve_system_py(
     jj = jj.cpu()
     res = res.clone().cpu()
     
-    # Get base parameters
     r = res.size(0)  # Number of edges
     n = max(ii.max().item(), jj.max().item()) + 1  # Number of nodes
     
-    # Prepare residual vector (r*7,)
     res_vec = res.view(-1).numpy().astype(np.float64)
     
-    # Prepare sparse matrix J in COO format
     rows, cols, data = [], [], []
     ii_np = ii.numpy()
     jj_np = jj.numpy()
@@ -54,7 +51,6 @@ def solve_system_py(
         if i == j:
             raise ValueError("Self-edges are not allowed")
         
-        # Add Jacobian block for node i
         for k in range(7):
             for l in range(7):
                 row_idx = x * 7 + k
@@ -64,31 +60,24 @@ def solve_system_py(
                 cols.append(col_idx_i)
                 data.append(val_i)
                 
-                # Add Jacobian block for node j
                 col_idx_j = j * 7 + l
                 val_j = J_Ginv_j_np[x, k, l]
                 rows.append(row_idx)
                 cols.append(col_idx_j)
                 data.append(val_j)
     
-    # Create sparse matrix J (r*7, n*7)
     J = coo_matrix((data, (rows, cols)), shape=(r * 7, n * 7)).tocsc()
     
-    # Calculate b = -J^T * res
     b_vec = - J.T @ res_vec
     
-    # Calculate A = J^T * J
     A_mat = J.T @ J
     
-    # Regularize diagonal terms
     diag = A_mat.diagonal()
     new_diag = diag * (1.0 + lm) + ep
     A_mat.setdiag(new_diag)
     
-    # Solve linear system
     freen_total = freen * 7
     delta = solve_sparse(A_mat.tocsc(), b_vec, freen_total)
     
-    # Convert to PyTorch tensor and reshape
     delta_tensor = torch.from_numpy(delta.astype(np.float32)).view(n, 7).to(device)
     return delta_tensor

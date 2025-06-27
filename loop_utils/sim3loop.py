@@ -60,12 +60,10 @@ class Sim3LoopOptimizer:
         """
         n = len(sequential_transforms) + 1
         poses = []
-        
-        # First frame is identity transform
+
         identity = pp.Sim3(torch.tensor([0., 0., 0., 0., 0., 0., 1., 1.], device=self.device))
         poses.append(identity)
         
-        # Accumulate transforms to get absolute poses
         current_pose = identity
         for s, R_mat, t_vec in sequential_transforms:
             rel_transform = self.numpy_to_pypose_sim3(s, R_mat, t_vec)
@@ -83,7 +81,6 @@ class Sim3LoopOptimizer:
         n = absolute_poses.shape[0]
         
         for i in range(n - 1):
-            # Compute relative transform: S_i(i+1) = T_i^(-1) @ T_(i+1)
             rel_transform = absolute_poses[i].Inv() @ absolute_poses[i + 1]
             s, R_mat, t_vec = self.pypose_sim3_to_numpy(rel_transform)
             sequential_transforms.append((s, R_mat, t_vec))
@@ -124,10 +121,8 @@ class Sim3LoopOptimizer:
             out = C @ pp.Exp(Gi) @ pp.Exp(Gj).Inv()
             return out.Log().tensor()
         
-        # Convert SE3 to Sim3
         pred_inv_poses = pp.Sim3(input_poses).Inv()
         
-        # Adjacent frame constraints
         n, _ = pred_inv_poses.shape
         if n > 1:
             kk = torch.arange(1, n, device=self.device)
@@ -140,7 +135,6 @@ class Sim3LoopOptimizer:
             ll = torch.empty(0, dtype=torch.long, device=self.device)
             dSij = pp.Sim3(torch.empty(0, 8, device=self.device))
         
-        # Merge constraints
         constants = torch.cat((dSij.data, dSloop.data), dim=0) if dSloop.shape[0] > 0 else dSij.data
         if constants.shape[0] > 0:
             constants = pp.Sim3(constants)
@@ -155,7 +149,6 @@ class Sim3LoopOptimizer:
         if not jacobian:
             return resid
         
-        # Compute Jacobian
         if constants.shape[0] > 0:
             def batch_jacobian(func, x):
                 def _func_sum(*x):
@@ -188,27 +181,22 @@ class Sim3LoopOptimizer:
         Returns:
             Optimized sequence of transforms
         """
-        # Convert to absolute poses
         input_poses = self.sequential_to_absolute_poses(sequential_transforms)
         
-        # Build loop constraints
         dSloop, ii_loop, jj_loop = self.build_loop_constraints(loop_constraints)
         
-        # Return original if no loop constraints
         if len(loop_constraints) == 0:
             print("Warning: No loop constraints provided, returning original transforms")
             return sequential_transforms
         
-        # Initialize
         Ginv = pp.Sim3(input_poses).Inv().Log()
         lmbda = lambda_init
         residual_history = []
         
         print(f"Starting optimization with {len(sequential_transforms)} poses and {len(loop_constraints)} loop constraints")
         
-        # L-M optimization loop
+        # L-M loop
         for itr in range(max_iterations):
-            # Compute residuals and Jacobian
             resid, (J_Ginv_i, J_Ginv_j, iii, jjj) = self.residual(
                 Ginv, input_poses, dSloop, ii_loop, jj_loop, jacobian=True)
             
@@ -219,8 +207,7 @@ class Sim3LoopOptimizer:
             current_cost = resid.square().mean().item()
             residual_history.append(current_cost)
             
-            # Solve linear system
-            try:
+            try: # Solve linear system
                 begin_time = time.time()
                 if self.solve_system_version == 'cpp':
                     delta_pose, = sim3solve.solve_system(
@@ -235,25 +222,22 @@ class Sim3LoopOptimizer:
                 print(f"Solver failed at iteration {itr}: {e}")
                 break
             
-            # Update poses
             Ginv_tmp = Ginv + delta_pose
             
-            # Compute new residuals
             new_resid = self.residual(Ginv_tmp, input_poses, dSloop, ii_loop, jj_loop)
             new_cost = new_resid.square().mean().item() if new_resid.numel() > 0 else float('inf')
             
-            # L-M update strategy
+            # L-M
             if new_cost < current_cost:
                 Ginv = Ginv_tmp
                 lmbda /= 2
-                print(f"Iteration {itr}: cost {current_cost:.6f} -> {new_cost:.6f} (accepted)", end=' | ')
+                print(f"Iteration {itr}: cost {current_cost:.14f} -> {new_cost:.14f} (accepted)", end=' | ')
             else:
                 lmbda *= 2
-                print(f"Iteration {itr}: cost {current_cost:.6f} -> {new_cost:.6f} (rejected)", end=' | ')
+                print(f"Iteration {itr}: cost {current_cost:.14f} -> {new_cost:.14f} (rej)     ", end=' | ') # more readible to accepted
             
-            print(f'Time of solver ({self.solve_system_version}): {(end_time - begin_time)*1000:.6f} ms')
+            print(f'Time of solver ({self.solve_system_version}): {(end_time - begin_time)*1000:.4f} ms')
 
-            # Convergence check
             if (current_cost < 1e-5) and (itr >= 4):
                 if len(residual_history) >= 5:
                     improvement_ratio = residual_history[-5] / residual_history[-1]
@@ -261,10 +245,8 @@ class Sim3LoopOptimizer:
                         print(f"Converged at iteration {itr}")
                         break
         
-        # Get optimized absolute poses
         optimized_absolute_poses = pp.Exp(Ginv).Inv()
         
-        # Convert back to sequential transforms
         optimized_sequential = self.absolute_to_sequential_transforms(optimized_absolute_poses)
         
         print(f"Optimization completed. Final cost: {residual_history[-1] if residual_history else 'N/A'}")

@@ -43,7 +43,6 @@ class LoopDetector:
         self.nms_threshold = nms_threshold
         self.output = output
         
-        # 初始化模型和设备
         self.model = None
         self.device = None
         self.image_paths = None
@@ -102,7 +101,6 @@ class LoopDetector:
             image_paths.extend(list(Path(self.image_dir).glob(f"*{ext}")))
             image_paths.extend(list(Path(self.image_dir).glob(f"*{ext.upper()}")))
         
-        # Sort by filename
         image_paths = sorted(image_paths)
         self.image_paths = image_paths
         return image_paths
@@ -129,14 +127,11 @@ class LoopDetector:
                     batch_imgs.append(img)
                 except Exception as e:
                     print(f"Error processing image {path}: {e}")
-                    # Use blank image instead
                     img = torch.zeros(3, 224, 224) if self.image_size is None else torch.zeros(3, self.image_size[0], self.image_size[1])
                     batch_imgs.append(img)
             
-            # Stack images into batch
             batch_tensor = torch.stack(batch_imgs).to(self.device)
             
-            # Extract features
             with torch.no_grad():
                 with torch.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', dtype=torch.float16):
                     batch_descriptors = self.model(batch_tensor).cpu()
@@ -187,38 +182,30 @@ class LoopDetector:
             
         import faiss
         
-        # Use FAISS for efficient nearest neighbor search
         embed_size = self.descriptors.shape[1]
-        faiss_index = faiss.IndexFlatIP(embed_size)  # Use inner product (cosine similarity)
+        faiss_index = faiss.IndexFlatIP(embed_size)
         
-        # Normalize descriptors for cosine similarity computation
         normalized_descriptors = self.descriptors.numpy()
         faiss_index.add(normalized_descriptors)
         
-        # Search for most similar images
         similarities, indices = faiss_index.search(normalized_descriptors, self.top_k + 1)  # +1 because self is most similar
         
-        # Collect loop pairs
         loop_closures = []
         for i in range(len(self.descriptors)):
             # Skip first result (self)
             for j in range(1, self.top_k + 1):
                 neighbor_idx = indices[i, j]
                 similarity = similarities[i, j]
-                
-                # Check if similarity above threshold and not adjacent frames
+
                 if similarity > self.similarity_threshold and abs(i - neighbor_idx) > 10:
-                    # Add loop pair (smaller index first)
                     if i < neighbor_idx:
                         loop_closures.append((i, neighbor_idx, similarity))
                     else:
                         loop_closures.append((neighbor_idx, i, similarity))
-        
-        # Remove duplicates and sort by similarity
+
         loop_closures = list(set(loop_closures))
         loop_closures.sort(key=lambda x: x[2], reverse=True)
         
-        # Apply NMS filtering if enabled
         if self.use_nms and self.nms_threshold > 0:
             loop_closures = self._apply_nms_filter(loop_closures, self.nms_threshold)
         
@@ -235,18 +222,17 @@ class LoopDetector:
             f.write("# Loop Detection Results (index1, index2, similarity)\n")
             if self.use_nms:
                 f.write(f"# NMS filtering applied, threshold: {self.nms_threshold}\n")
-            f.write("# Image path list:\n")
-            for i, path in enumerate(self.image_paths):
-                f.write(f"# {i}: {path}\n")
             f.write("\n# Loop pairs:\n")
             for i, j, sim in self.loop_closures:
                 f.write(f"{i}, {j}, {sim:.4f}\n")
+            f.write("\n# Image path list:\n")
+            for i, path in enumerate(self.image_paths):
+                f.write(f"# {i}: {path}\n")
         
         print(f"Found {len(self.loop_closures)} loop pairs, results saved to {self.output}")
         if self.use_nms:
             print(f"NMS filtering applied, threshold: {self.nms_threshold}")
         
-        # 打印前10个回环对
         if self.loop_closures:
             print("\nTop 10 loop pairs:")
             for i, (idx1, idx2, sim) in enumerate(self.loop_closures[:10]):
@@ -259,11 +245,9 @@ class LoopDetector:
 
     def run(self):
         """Run complete loop detection pipeline"""
-        # 加载模型
         print('Loading model...')
         self.load_model()
         
-        # 获取图像路径
         self.get_image_paths()
         if not self.image_paths:
             print(f"No image files found in {self.image_dir}")
@@ -271,13 +255,10 @@ class LoopDetector:
         
         print(f"Found {len(self.image_paths)} image files")
         
-        # 提取特征描述符
         self.extract_descriptors()
         
-        # 查找回环闭合
         self.find_loop_closures()
         
-        # 保存结果
         self.save_results()
         
         return self.loop_closures

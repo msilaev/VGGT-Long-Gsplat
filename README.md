@@ -5,6 +5,7 @@
 
 ![KITTI](./assets/kitti.png)
 ![iPhone](./assets/iphone.png)
+![KITTI-05](./assets/kitti-05.png)
 
 ### **Change Log**
 

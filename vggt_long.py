@@ -8,13 +8,15 @@ import torch
 from tqdm.auto import tqdm
 import cv2
 
+import gc
+
 try:
     import onnxruntime
 except ImportError:
     print("onnxruntime not found. Sky segmentation may not work.")
 
 from LoopModels.LoopModel import LoopDetector
-from loop_closure.retrieval.retrieval_dbow import RetrievalDBOW
+from LoopModelDBoW.retrieval.retrieval_dbow import RetrievalDBOW
 from loop_utils.visual_util import segment_sky, download_file_from_url
 from vggt.models.vggt import VGGT
 from vggt.utils.load_fn import load_and_preprocess_images
@@ -42,6 +44,9 @@ def remove_duplicates(data_list):
     result = []
     
     for item in data_list:
+        if item[0] == item[2]:
+            continue
+
         key = (item[0], item[2])
         
         if key not in seen.keys():
@@ -58,10 +63,11 @@ class LongSeqResult:
         self.combined_depth_confs = []
         self.combined_world_points = []
         self.combined_world_points_confs = []
+        self.all_camera_poses = [] 
 
 class VGGT_Long:
     def __init__(self, image_dir, save_dir):
-        self.chunk_size = 60
+        self.chunk_size = 75
         self.overlap = 25
         self.conf_threshold = 1.5
         self.seed = 42
@@ -74,14 +80,16 @@ class VGGT_Long:
         self.img_list = None
         self.output_dir = save_dir
 
-        self.result_unaligned_dir = os.path.join(save_dir, 'tmp_results_unaligned')
-        self.result_aligned_dir = os.path.join(save_dir, 'tmp_results_aligned')
-        self.result_loop_dir = os.path.join(save_dir, 'tmp_results_loop')
+        self.result_unaligned_dir = os.path.join(save_dir, '_tmp_results_unaligned')
+        self.result_aligned_dir = os.path.join(save_dir, '_tmp_results_aligned')
+        self.result_loop_dir = os.path.join(save_dir, '_tmp_results_loop')
         self.pcd_dir = os.path.join(save_dir, 'pcd')
         os.makedirs(self.result_unaligned_dir, exist_ok=True)
         os.makedirs(self.result_aligned_dir, exist_ok=True)
         os.makedirs(self.result_loop_dir, exist_ok=True)
         os.makedirs(self.pcd_dir, exist_ok=True)
+        
+        self.all_camera_poses = []
 
         self.delet_temp_files = True
 
@@ -124,7 +132,7 @@ class VGGT_Long:
 
         if self.loop_enable:
             if self.useDBoW:
-                self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long (copy)/ORBvoc.txt")
+                self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long/ORBvoc.txt")
             else:
                 loop_info_save_path = os.path.join(save_dir, "loop_closures.txt")
                 self.loop_detector = LoopDetector(
@@ -194,7 +202,7 @@ class VGGT_Long:
         print("Processing model outputs...")
         for key in predictions.keys():
             if isinstance(predictions[key], torch.Tensor):
-                predictions[key] = predictions[key].cpu().numpy().squeeze(0)  # remove batch dimension and convert to numpy
+                predictions[key] = predictions[key].cpu().numpy().squeeze(0)
         
         # Save predictions to disk instead of keeping in memory
         if is_loop:
@@ -208,10 +216,17 @@ class VGGT_Long:
         
         save_path = os.path.join(save_dir, filename)
                     
-        # remove useless item to save disk space
-        keys_to_remove = ('pose_enc', 'depth', 'depth_conf', 'intrinsic')
-        for key in keys_to_remove:
-            predictions.pop(key, None)
+        if not is_loop and range_2 is None:
+            extrinsics = predictions['extrinsic']
+            chunk_range = self.chunk_indices[chunk_idx]
+            self.all_camera_poses.append((chunk_range, extrinsics))
+        
+        # # remove useless item to save disk space
+        # keys_to_remove = ('pose_enc', 'depth', 'depth_conf', 'intrinsic')
+        # for key in keys_to_remove:
+        #     predictions.pop(key, None)
+
+        predictions['depth'] = np.squeeze(predictions['depth'])
 
         np.save(save_path, predictions)
         
@@ -242,30 +257,30 @@ class VGGT_Long:
 
             self.loop_predict_list.append((item, single_chunk_predictions))
             print(item)
+            torch.cuda.empty_cache()
 
         print(f"Processing {len(self.img_list)} images in {num_chunks} chunks of size {self.chunk_size} with {self.overlap} overlap")
 
         for chunk_idx in range(len(self.chunk_indices)):
             print(f'[Progress]: {chunk_idx}/{len(self.chunk_indices)}')
             self.process_single_chunk(self.chunk_indices[chunk_idx], chunk_idx=chunk_idx)
+            torch.cuda.empty_cache()
 
         del self.model # Save GPU Memory
+        torch.cuda.empty_cache()
 
         print("Aligning all the chunks...")
         # 暂时还没有考虑最后一组数量不够的情况
         for chunk_idx in range(len(self.chunk_indices)-1):
             print(chunk_idx, chunk_idx+1)
 
-            # Load chunk data from file
             chunk_data = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
             
-            # debug saving 
             points = chunk_data['world_points'].reshape(-1, 3)
             colors = (chunk_data['images'].transpose(0, 2, 3, 1).reshape(-1, 3) * 255).astype(np.uint8)
             confs = chunk_data['world_points_conf'].reshape(-1)
 
             print(f"Aligning {chunk_idx} and {chunk_idx+1}")
-            # Load chunk data from files
             chunk_data1 = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
             chunk_data2 = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx+1}.npy"), allow_pickle=True).item()
             
@@ -274,8 +289,8 @@ class VGGT_Long:
             conf1 = chunk_data1['world_points_conf'][-self.overlap:]
             conf2 = chunk_data2['world_points_conf'][:self.overlap]
 
-            conf_threshold = min(np.median(conf1), np.median(conf2)) * 0.5
-            s, R, t = align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold=conf_threshold)
+            conf_threshold = min(np.median(conf1), np.median(conf2)) * 0.1
+            s, R, t = weighted_align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold=conf_threshold)
             print("Estimated Scale:", s)
             print("Estimated Rotation:\n", R)
             print("Estimated Translation:", t)
@@ -297,14 +312,13 @@ class VGGT_Long:
             print(self.chunk_indices[chunk_idx_a])
             print(chunk_a_range)
             print(chunk_a_rela_begin, chunk_a_rela_end)
-            # Load chunk data from file
             chunk_data_a = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx_a}.npy"), allow_pickle=True).item()
             
             point_map_a = chunk_data_a['world_points'][chunk_a_rela_begin:chunk_a_rela_end]
             conf_a = chunk_data_a['world_points_conf'][chunk_a_rela_begin:chunk_a_rela_end]
         
-            conf_threshold = min(np.median(conf_a), np.median(conf_loop)) * 0.5
-            s_a, R_a, t_a = align_point_maps(point_map_a, conf_a, point_map_loop, conf_loop, conf_threshold=conf_threshold)
+            conf_threshold = min(np.median(conf_a), np.median(conf_loop)) * 0.1
+            s_a, R_a, t_a = weighted_align_point_maps(point_map_a, conf_a, point_map_loop, conf_loop, conf_threshold=conf_threshold)
             print("Estimated Scale:", s_a)
             print("Estimated Rotation:\n", R_a)
             print("Estimated Translation:", t_a)
@@ -317,14 +331,13 @@ class VGGT_Long:
             print(self.chunk_indices[chunk_idx_b])
             print(chunk_b_range)
             print(chunk_b_rela_begin, chunk_b_rela_end)
-            # Load chunk data from file
             chunk_data_b = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx_b}.npy"), allow_pickle=True).item()
             
             point_map_b = chunk_data_b['world_points'][chunk_b_rela_begin:chunk_b_rela_end]
             conf_b = chunk_data_b['world_points_conf'][chunk_b_rela_begin:chunk_b_rela_end]
         
-            conf_threshold = min(np.median(conf_b), np.median(conf_loop)) * 0.5
-            s_b, R_b, t_b = align_point_maps(point_map_b, conf_b, point_map_loop, conf_loop, conf_threshold=conf_threshold)
+            conf_threshold = min(np.median(conf_b), np.median(conf_loop)) * 0.1
+            s_b, R_b, t_b = weighted_align_point_maps(point_map_b, conf_b, point_map_loop, conf_loop, conf_threshold=conf_threshold)
             print("Estimated Scale:", s_b)
             print("Estimated Rotation:\n", R_b)
             print("Estimated Translation:", t_b)
@@ -351,8 +364,7 @@ class VGGT_Long:
             x0, _, y0 = extract_xyz(input_abs_poses)
             x1, _, y1 = extract_xyz(optimized_abs_poses)
 
-            # Visualize trajectory
-
+            # Visual in png format
             plt.figure(figsize=(8, 6))
             plt.plot(x0, y0, 'o--', alpha=0.45, label='Before Optimization')
             plt.plot(x1, y1, 'o-', label='After Optimization')
@@ -370,29 +382,23 @@ class VGGT_Long:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
 
-        # apply alignment
-        print('apply alignment')
+        print('Apply alignment')
         self.sim3_list = accumulate_sim3_transforms(self.sim3_list)
         for chunk_idx in range(len(self.chunk_indices)-1):
-            print(chunk_idx, chunk_idx+1)
+            print(f'Applying {chunk_idx+1} -> {chunk_idx} (Total {len(self.chunk_indices)-1})')
             s, R, t = self.sim3_list[chunk_idx]
             
-            # Load chunk data from file
             chunk_data = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx+1}.npy"), allow_pickle=True).item()
             
-            # Apply transformation
             chunk_data['world_points'] = apply_sim3_direct(chunk_data['world_points'], s, R, t)
             
-            # Save aligned result
             aligned_path = os.path.join(self.result_aligned_dir, f"chunk_{chunk_idx+1}.npy")
             np.save(aligned_path, chunk_data)
             
-            # For the first chunk, just copy to aligned directory
             if chunk_idx == 0:
                 chunk_data_first = np.load(os.path.join(self.result_unaligned_dir, f"chunk_0.npy"), allow_pickle=True).item()
                 np.save(os.path.join(self.result_aligned_dir, "chunk_0.npy"), chunk_data_first)
             
-            # Load the aligned data for point cloud generation
             aligned_chunk_data = np.load(os.path.join(self.result_aligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item() if chunk_idx > 0 else chunk_data_first
             
             points = aligned_chunk_data['world_points'].reshape(-1, 3)
@@ -404,10 +410,12 @@ class VGGT_Long:
                 colors=colors,              # shape: (H, W, 3)
                 confs=confs,          # shape: (H, W)
                 output_path=ply_path,
-                conf_threshold=np.median(confs) * 1.2,
+                conf_threshold=np.mean(confs) * 0.75,
                 sample_ratio=0.015
             )
 
+        self.save_camera_poses()
+        
         print('Done.')
 
     
@@ -425,11 +433,94 @@ class VGGT_Long:
 
         if self.useDBoW:
             self.retrieval.close() # Save CPU Memory
+            gc.collect()
         else:
             del self.loop_detector # Save GPU Memory
+            torch.cuda.empty_cache()
 
         self.process_long_sequence()
 
+    def save_camera_poses(self):
+        '''
+        Save camera poses from all chunks to txt and ply files
+        - txt file: Each line contains a 4x4 C2W matrix flattened into 16 numbers
+        - ply file: Camera poses visualized as points with different colors for each chunk
+        '''
+        chunk_colors = [
+            [255, 0, 0],    # Red
+            [0, 255, 0],    # Green
+            [0, 0, 255],    # Blue
+            [255, 255, 0],  # Yellow
+            [255, 0, 255],  # Magenta
+            [0, 255, 255],  # Cyan
+            [128, 0, 0],    # Dark Red
+            [0, 128, 0],    # Dark Green
+            [0, 0, 128],    # Dark Blue
+            [128, 128, 0],  # Olive
+        ]
+        print("Saving all camera poses to txt file...")
+        
+        all_poses = [None] * len(self.img_list)
+        
+        first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
+        for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
+            pose = np.eye(4) 
+            if first_chunk_extrinsics[i].shape == (3, 4):
+                pose[:3, :] = first_chunk_extrinsics[i]
+            else:
+                pose = first_chunk_extrinsics[i]
+            all_poses[idx] = pose
+        
+        for chunk_idx in range(1, len(self.all_camera_poses)):
+            chunk_range, chunk_extrinsics = self.all_camera_poses[chunk_idx]
+            s, R, t = self.sim3_list[chunk_idx-1]
+            
+            for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
+                pose = np.eye(4)
+                if chunk_extrinsics[i].shape == (3, 4):
+                    pose[:3, :] = chunk_extrinsics[i]
+                else:
+                    pose = chunk_extrinsics[i]
+                
+                transformed_pose = np.eye(4)
+                transformed_pose[:3, :3] = s * R @ pose[:3, :3]
+                transformed_pose[:3, 3] = s * R @ pose[:3, 3] + t
+                all_poses[idx] = transformed_pose
+        
+        poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
+        with open(poses_path, 'w') as f:
+            for pose in all_poses:
+                flat_pose = pose.flatten()
+                f.write(' '.join([str(x) for x in flat_pose]) + '\n')
+        
+        print(f"Camera poses saved to {poses_path}")
+        
+        ply_path = os.path.join(self.output_dir, 'camera_poses.ply')
+        with open(ply_path, 'w') as f:
+            # Write PLY header
+            f.write('ply\n')
+            f.write('format ascii 1.0\n')
+            f.write(f'element vertex {len(all_poses)}\n')
+            f.write('property float x\n')
+            f.write('property float y\n')
+            f.write('property float z\n')
+            f.write('property uchar red\n')
+            f.write('property uchar green\n')
+            f.write('property uchar blue\n')
+            f.write('end_header\n')
+            
+            for chunk_idx in range(len(self.all_camera_poses)):
+                chunk_range, _ = self.all_camera_poses[chunk_idx]
+                color = chunk_colors[chunk_idx % len(chunk_colors)]
+                
+                for idx in range(chunk_range[0], chunk_range[1]):
+                    pose = all_poses[idx]
+                    position = pose[:3, 3]
+                    f.write(f'{position[0]} {position[1]} {position[2]} {color[0]} {color[1]} {color[2]}\n')
+        
+        print(f"Camera poses visualization saved to {ply_path}")
+
+    
     def close(self):
         '''
             Clean up temporary files and calculate reclaimed disk space.
