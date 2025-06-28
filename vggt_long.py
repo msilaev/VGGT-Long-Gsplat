@@ -74,7 +74,7 @@ class VGGT_Long:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.dtype = torch.bfloat16 if torch.cuda.get_device_capability()[0] >= 8 else torch.float16
         self.sky_mask = False
-        self.useDBoW = False
+        self.useDBoW = True
 
         self.img_dir = image_dir
         self.img_list = None
@@ -132,7 +132,7 @@ class VGGT_Long:
 
         if self.loop_enable:
             if self.useDBoW:
-                self.retrieval = RetrievalDBOW(vocab_path = "/media/deng/Data/VGGT-Long/ORBvoc.txt")
+                self.retrieval = RetrievalDBOW(vocab_path = "./weights/ORBvoc.txt")
             else:
                 loop_info_save_path = os.path.join(save_dir, "loop_closures.txt")
                 self.loop_detector = LoopDetector(
@@ -171,7 +171,7 @@ class VGGT_Long:
 
                 self.retrieval.save_up_to(frame_id)
 
-            self.loop_list = remove_duplicates(self.loop_list)
+            # self.loop_list = remove_duplicates(self.loop_list)
 
         else: # DNIO v2
             self.loop_detector.run()
@@ -220,11 +220,6 @@ class VGGT_Long:
             extrinsics = predictions['extrinsic']
             chunk_range = self.chunk_indices[chunk_idx]
             self.all_camera_poses.append((chunk_range, extrinsics))
-        
-        # # remove useless item to save disk space
-        # keys_to_remove = ('pose_enc', 'depth', 'depth_conf', 'intrinsic')
-        # for key in keys_to_remove:
-        #     predictions.pop(key, None)
 
         predictions['depth'] = np.squeeze(predictions['depth'])
 

@@ -31,7 +31,7 @@ def _dbow_loop(in_queue, out_queue, vocab_path, ready):
 
 class RetrievalDBOW:
 
-    def __init__(self, vocab_path="ORBvoc.txt"):
+    def __init__(self, vocab_path="weights/ORBvoc.txt"):
         if not os.path.exists(vocab_path):
             raise FileNotFoundError("""Missing the ORB vocabulary. Please download and un-tar it from """
                                   """https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Vocabulary/ORBvoc.txt.tar.gz""")
