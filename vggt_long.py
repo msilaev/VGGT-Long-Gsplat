@@ -67,7 +67,7 @@ class LongSeqResult:
 
 class VGGT_Long:
     def __init__(self, image_dir, save_dir):
-        self.chunk_size = 75
+        self.chunk_size = 60
         self.overlap = 25
         self.conf_threshold = 1.5
         self.seed = 42
@@ -350,8 +350,8 @@ class VGGT_Long:
 
             self.loop_sim3_list.append((chunk_idx_a, chunk_idx_b, (s_ab, R_ab, t_ab)))
 
-        
-        
+
+
         if True:
             input_abs_poses = self.loop_optimizer.sequential_to_absolute_poses(self.sim3_list)
             self.sim3_list = self.loop_optimizer.optimize(self.sim3_list, self.loop_sim3_list)
@@ -464,28 +464,28 @@ class VGGT_Long:
         
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
-            pose = np.eye(4) 
-            if first_chunk_extrinsics[i].shape == (3, 4):
-                pose[:3, :] = first_chunk_extrinsics[i]
-            else:
-                pose = first_chunk_extrinsics[i]
-            all_poses[idx] = pose
-        
+            w2c = np.eye(4)
+            w2c[:3, :] = first_chunk_extrinsics[i] 
+            c2w = np.linalg.inv(w2c)
+            all_poses[idx] = c2w
+
         for chunk_idx in range(1, len(self.all_camera_poses)):
             chunk_range, chunk_extrinsics = self.all_camera_poses[chunk_idx]
-            s, R, t = self.sim3_list[chunk_idx-1]
+            s, R, t = self.sim3_list[chunk_idx-1]   # When call self.save_camera_poses(), all the sim3 are aligned to the first chunk.
             
+            S = np.eye(4)
+            S[:3, :3] = s * R
+            S[:3, 3] = t
+
             for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
-                pose = np.eye(4)
-                if chunk_extrinsics[i].shape == (3, 4):
-                    pose[:3, :] = chunk_extrinsics[i]
-                else:
-                    pose = chunk_extrinsics[i]
-                
-                transformed_pose = np.eye(4)
-                transformed_pose[:3, :3] = s * R @ pose[:3, :3]
-                transformed_pose[:3, 3] = s * R @ pose[:3, 3] + t
-                all_poses[idx] = transformed_pose
+                w2c = np.eye(4)
+                w2c[:3, :] = chunk_extrinsics[i]
+                c2w = np.linalg.inv(w2c)
+
+                transformed_c2w = S @ c2w  # Notice the left multiplication!
+
+                all_poses[idx] = transformed_c2w
+
         
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:
@@ -589,7 +589,7 @@ if __name__ == '__main__':
     vggt_long.close()
     del vggt_long
 
-    all_ply_path = os.path.join(save_dir, f'pcd/combimed_pcd.ply')
+    all_ply_path = os.path.join(save_dir, f'pcd/combined_pcd.ply')
     input_dir = os.path.join(save_dir, f'pcd')
     print("Saving all the point clouds")
     merge_ply_files(input_dir, all_ply_path)

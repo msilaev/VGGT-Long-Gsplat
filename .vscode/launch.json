@@ -16,6 +16,7 @@
             // "args" : [ "--image_dir", "/media/deng/Data/GameRecordDataset/Cyberpunk-1"],
             // "args" : [ "--image_dir", "/media/deng/Data/droid-gs/data/seasidetown-P000/image_left"],
             // "args" : [ "--image_dir", "/media/deng/Data/iPhoneDataset/stairs-wide-60hz"],
+            // "args" : [ "--image_dir", "/media/deng/Data/iPhoneDataset/stairs-night-60hz-wide"],
             // "args" : [ "--image_dir", "/media/deng/Data/ScanNet/image/color"],
             "subProcess": true
         }
