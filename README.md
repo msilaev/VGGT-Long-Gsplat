@@ -34,7 +34,7 @@ System Environment：
 
 ### 📦 2 - Environment Setup 
 
-> **Note:** This repository contains a significant amount of `C++` code, but our goal is to make it as out-of-the-box usable as possible for researchers, as many deep learning researchers may not be familiar with `C++` compilation. Currently, the code for `VGGT-Long` can run in a **pure `Python` environment**, which means you can skip all the `C++` compilation steps in the `README`.
+> **Note:** This repository contains a significant amount of `C++` code, but our goal is to make it as out-of-the-box usable as possible for researchers, as many deep learning researchers may not be familiar with `C++` compilation. Currently, the code for `VGGT-Long` can run in a **pure Python environment**, which means you can skip all the `C++` compilation steps in the `README`.
 
 #### Step 1: Dependency Installation
 
