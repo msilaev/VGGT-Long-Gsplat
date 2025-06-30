@@ -553,14 +553,11 @@ def weighted_estimate_sim3(source_points, target_points, weights):
     return s, R, t
 
 
-
-# ================================
-
 def huber_loss(r, delta):
     abs_r = np.abs(r)
     return np.where(abs_r <= delta, 0.5 * r**2, delta * (abs_r - 0.5 * delta))
 
-def robust_weighted_estimate_sim3(src, tgt, init_weights, delta=0.1, max_iters=20, tol=1e-12):
+def robust_weighted_estimate_sim3(src, tgt, init_weights, delta=0.1, max_iters=20, tol=1e-9):
     """
     src:  (Nx3)
     tgt:  (Nx3)
@@ -600,9 +597,7 @@ def robust_weighted_estimate_sim3(src, tgt, init_weights, delta=0.1, max_iters=2
     return s, R, t
 
 
-# ================================
-
-def weighted_align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold):
+def weighted_align_point_maps(point_map1, conf1, point_map2, conf2, conf_threshold, config):
     """ point_map2 -> point_map1"""
     b1, _, _, _ = point_map1.shape
     b2, _, _, _ = point_map2.shape
@@ -639,7 +634,13 @@ def weighted_align_point_maps(point_map1, conf1, point_map2, conf2, conf_thresho
 
     print(f"The number of corresponding points matched: {all_pts1.shape[0]}")
     
-    s, R, t = robust_weighted_estimate_sim3(all_pts2, all_pts1, all_weights)
+    s, R, t = robust_weighted_estimate_sim3(all_pts2, 
+                                            all_pts1, 
+                                            all_weights,
+                                            delta=config['Model']['IRLS']['delta'],
+                                            max_iters=config['Model']['IRLS']['max_iters'],
+                                            tol=eval(config['Model']['IRLS']['tol'])
+                                            )
 
     mean_error = compute_alignment_error(
         point_map1, conf1, 

@@ -34,6 +34,8 @@ System Environment：
 
 ### 📦 2 - Environment Setup 
 
+> **Note:** This repository contains a significant amount of C++ code, but our goal is to make it as out-of-the-box usable as possible for researchers, as many deep learning researchers may not be familiar with `C++` compilation. Currently, the code for `VGGT-Long` can run in a **pure `Python` environment**, which means you can skip all the `C++` compilation steps in the `README`.
+
 #### Step 1: Dependency Installation
 
 Creating a virtual environment using conda (or miniconda)
@@ -57,9 +59,19 @@ Then install other dependencies exactly the same as [VGGT](https://github.com/fa
 pip install -r requirements.txt
 ```
 
-#### Step 2 (Optional): Compile Loop-Closure Correction Module
+#### Step 2: Weights Download
 
-We provide a Python-based Sim3 solver, so `VGGT-Long` can run the loop closure correction solving without compiling `C++` code. Therefore, this step is optional and you can skip it. However, we still recommend installing the `C++` solver as it is more stable and faster.
+Download all the pre-trained weights needed:
+
+```bash
+bash ./scripts/download_weights.sh
+```
+
+You can skip the next two steps if you would like to run `VGGT-Long` in pure `Python`.
+
+#### Step 3 (Optional) : Compile Loop-Closure Correction Module
+
+We provide a Python-based Sim3 solver, so `VGGT-Long` can run the loop closure correction solving without compiling `C++` code. However, we still recommend installing the `C++` solver as it is more **stable and faster**.
 
 ```bash
 python setup.py install
@@ -67,9 +79,8 @@ python setup.py install
 
 
 
-#### Step 3: Compile Loop-Closure Detection Module
+#### Step 4 (Optional) : Compile `DBoW` Loop-Closure Detection Module
 
-Our goal is to use as much pure `Python` as possible. However, currently `C++` compilation is still necessary to ensure the **CPU memory efficiency** of the code. We will make this `C++` installation step **optional** in upcoming updates.
 
 Install the `OpenCV C++ API`.
 
@@ -94,21 +105,6 @@ Install the image retrieval
 pip install ./DPRetrieval
 ```
 
-#### Step 4: Bag of Words Model Setup
-
-Download the pre-trained Bag of Words vocabulary for `DBoW2`:
-
-```bash
-# Download the vocabulary file (about 150 MiB)
-wget https://github.com/UZ-SLAMLab/ORB_SLAM3/raw/master/Vocabulary/ORBvoc.txt.tar.gz
-# You could download manually from the link via your browser
-
-# Extract the vocabulary file
-tar -xzvf ORBvoc.txt.tar.gz
-
-# Verify if the extraction is successful
-ls -l ORBvoc.txt
-```
 
 ### 🚀 3 - Running the code 
 

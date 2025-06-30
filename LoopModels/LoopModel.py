@@ -7,19 +7,12 @@ from pathlib import Path
 
 from LoopModels.vpr_model import VPRModel
 
-
 class LoopDetector:
     """Loop detector class for detecting loop closures in image sequences"""
     
     def __init__(self, image_dir, 
-                 ckpt_path="./weights/dino_salad.ckpt",
-                 image_size=[336, 336],
-                 batch_size=32,
-                 similarity_threshold=0.7,
-                 top_k=5,
-                 use_nms=True,
-                 nms_threshold=25,
-                 output="loop_closures.txt"):
+                 output="loop_closures.txt",
+                 config=None):
         """Initialize the loop detector
         
         Args:
@@ -33,14 +26,15 @@ class LoopDetector:
             nms_threshold: NMS threshold for minimum frame difference between loop pairs
             output: Output file path
         """
+        self.config = config
         self.image_dir = image_dir
-        self.ckpt_path = ckpt_path
-        self.image_size = image_size
-        self.batch_size = batch_size
-        self.similarity_threshold = similarity_threshold
-        self.top_k = top_k
-        self.use_nms = use_nms
-        self.nms_threshold = nms_threshold
+        self.ckpt_path = self.config['Weights']['SALAD']
+        self.image_size = self.config['Loop']['SALAD']['image_size']
+        self.batch_size = self.config['Loop']['SALAD']['batch_size']
+        self.similarity_threshold = self.config['Loop']['SALAD']['similarity_threshold']
+        self.top_k = self.config['Loop']['SALAD']['top_k']
+        self.use_nms = self.config['Loop']['SALAD']['use_nms']
+        self.nms_threshold = self.config['Loop']['SALAD']['nms_threshold']
         self.output = output
         
         self.model = None
@@ -80,6 +74,7 @@ class LoopDetector:
                 'cluster_dim': 128,
                 'token_dim': 256,
             },
+            vggt_long_config=self.config
         )
 
         model.load_state_dict(torch.load(self.ckpt_path))

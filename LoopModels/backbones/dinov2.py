@@ -24,7 +24,8 @@ class DINOv2(nn.Module):
             model_name='dinov2_vitb14',
             num_trainable_blocks=2,
             norm_layer=False,
-            return_token=False
+            return_token=False,
+            vggt_long_config=None
         ):
         super().__init__()
 
@@ -32,7 +33,7 @@ class DINOv2(nn.Module):
         # self.model = torch.hub.load('facebookresearch/dinov2', model_name)
         # self.model = torch.hub.load('facebookresearch/dinov2', model_name, pretrained=False)
         self.model = torch.hub.load('./LoopModels/dinov2', model_name, source='local', pretrained=False)
-        self.model.load_state_dict(torch.load('weights/dinov2_vitb14_pretrain.pth'))
+        self.model.load_state_dict(torch.load(vggt_long_config['Weights']['DNIO']))
         self.num_channels = DINOV2_ARCHS[model_name]
         self.num_trainable_blocks = num_trainable_blocks
         self.norm_layer = norm_layer

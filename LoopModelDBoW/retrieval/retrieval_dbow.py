@@ -13,12 +13,6 @@ from collections import OrderedDict
 
 # from logging_utils import Log
 
-NMS = 60 # Slow motion gets removed from keyframes anyway. So this is really the keyframe distance
-
-RAD = 50
-
-MAX_BUFFER_SIZE = 20 
-
 def _dbow_loop(in_queue, out_queue, vocab_path, ready):
     """ Run DBoW retrieval """
     dbow = dpretrieval.DPRetrieval(vocab_path, 50)
@@ -31,7 +25,10 @@ def _dbow_loop(in_queue, out_queue, vocab_path, ready):
 
 class RetrievalDBOW:
 
-    def __init__(self, vocab_path="weights/ORBvoc.txt"):
+    def __init__(self, config):
+        self.config = config
+        vocab_path = self.config['Weights']['DBoW']
+        self.NMS = self.config['Loop']['DBoW']['NMS']
         if not os.path.exists(vocab_path):
             raise FileNotFoundError("""Missing the ORB vocabulary. Please download and un-tar it from """
                                   """https://github.com/UZ-SLAMLab/ORB_SLAM3/blob/master/Vocabulary/ORBvoc.txt.tar.gz""")
@@ -107,7 +104,7 @@ class RetrievalDBOW:
 
         # Ensure that this edge is not redundant
         dists_sq = [(np.square(i - a) + np.square(j - b)) for a,b in self.prev_loop_closes]
-        if min(dists_sq, default=np.inf) < np.square(NMS):
+        if min(dists_sq, default=np.inf) < np.square(self.NMS):
             return
 
         # Add this frame pair to the list of retrieved matches
@@ -122,9 +119,6 @@ class RetrievalDBOW:
         assert image.dtype == np.uint8
         assert parse_shape(image, '_ _ RGB') == dict(RGB=3)
         self.image_buffer[n] = image
-
-        # if len(self.image_buffer) > MAX_BUFFER_SIZE:
-        #     self.image_buffer.popitem(last=False)  
     
     def close(self):
         self.proc.terminate()

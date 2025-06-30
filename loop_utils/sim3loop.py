@@ -29,9 +29,10 @@ class Sim3LoopOptimizer:
     - Optimized sequential_transforms
     """
     
-    def __init__(self, device='cpu', solve_system_version = 'cpp'):
+    def __init__(self, config, device='cpu'):
         self.device = device
-        self.solve_system_version = solve_system_version # choose between 'python' and 'cpp'
+        self.config = config
+        self.solve_system_version = self.config['Loop']['SIM3_Optimizer']['lang_version'] # choose between 'python' and 'cpp'
 
         if not cpp_version:
             self.solve_system_version = 'python'
@@ -167,8 +168,8 @@ class Sim3LoopOptimizer:
     def optimize(self, 
                 sequential_transforms: List[Tuple[float, np.ndarray, np.ndarray]],
                 loop_constraints: List[Tuple[int, int, Tuple[float, np.ndarray, np.ndarray]]],
-                max_iterations: int = 30,
-                lambda_init: float = 1e-6) -> List[Tuple[float, np.ndarray, np.ndarray]]:
+                max_iterations: int = None,
+                lambda_init: float = None) -> List[Tuple[float, np.ndarray, np.ndarray]]:
         """
         Main optimization function
         
@@ -181,6 +182,11 @@ class Sim3LoopOptimizer:
         Returns:
             Optimized sequence of transforms
         """
+        if max_iterations is None:
+            max_iterations = self.config['Loop']['SIM3_Optimizer']['max_iterations']
+        if lambda_init is None:
+            lambda_init = eval(self.config['Loop']['SIM3_Optimizer']['lambda_init'])
+
         input_poses = self.sequential_to_absolute_poses(sequential_transforms)
         
         dSloop, ii_loop, jj_loop = self.build_loop_constraints(loop_constraints)
@@ -310,6 +316,9 @@ def example_usage():
 
     # Visualize trajectory
     import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use('Agg')
+
     plt.figure(figsize=(8, 6))
     plt.plot(x0, y0, 'o--', label='Before Optimization')
     plt.plot(x1, y1, 'o-', label='After Optimization')

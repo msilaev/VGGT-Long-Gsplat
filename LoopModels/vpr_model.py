@@ -39,7 +39,8 @@ class VPRModel(pl.LightningModule):
         loss_name='MultiSimilarityLoss', 
         miner_name='MultiSimilarityMiner', 
         miner_margin=0.1,
-        faiss_gpu=False
+        faiss_gpu=False,
+        vggt_long_config=None
     ):
         super().__init__()
 
@@ -74,7 +75,7 @@ class VPRModel(pl.LightningModule):
         
         # ----------------------------------
         # get the backbone and the aggregator
-        self.backbone = helper.get_backbone(backbone_arch, backbone_config)
+        self.backbone = helper.get_backbone(backbone_arch, backbone_config, vggt_long_config)
         self.aggregator = helper.get_aggregator(agg_arch, agg_config)
 
         # For validation in Lightning v2.0.0

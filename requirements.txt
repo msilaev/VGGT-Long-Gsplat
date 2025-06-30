@@ -3,3 +3,11 @@ Pillow
 huggingface_hub
 einops
 safetensors
+
+xformers == 0.0.24
+faiss-gpu
+pandas
+prettytable
+pytorch-lightning
+pytorch-metric-learning
+torchmetrics

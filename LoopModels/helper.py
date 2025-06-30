@@ -5,7 +5,8 @@ from LoopModels import backbones
 
 def get_backbone(
         backbone_arch='resnet50',
-        backbone_config={}
+        backbone_config={},
+        vggt_long_config=None
     ):
     """Helper function that returns the backbone given its name
 
@@ -20,7 +21,7 @@ def get_backbone(
         return backbones.ResNet(backbone_arch, **backbone_config)
 
     elif 'dinov2' in backbone_arch.lower():
-        return backbones.DINOv2(model_name=backbone_arch, **backbone_config)
+        return backbones.DINOv2(model_name=backbone_arch, vggt_long_config=vggt_long_config, **backbone_config)
 
 
 def get_aggregator(agg_arch='ConvAP', agg_config={}):
