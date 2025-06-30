@@ -17,7 +17,7 @@ except ImportError:
 
 from LoopModels.LoopModel import LoopDetector
 from LoopModelDBoW.retrieval.retrieval_dbow import RetrievalDBOW
-from loop_utils.visual_util import segment_sky, download_file_from_url
+# from loop_utils.visual_util import segment_sky, download_file_from_url
 from vggt.models.vggt import VGGT
 from vggt.utils.load_fn import load_and_preprocess_images
 from vggt.utils.geometry import closed_form_inverse_se3, unproject_depth_map_to_point_map
@@ -111,14 +111,14 @@ class VGGT_Long:
 
         self.skyseg_session = None
 
-        if self.sky_mask:
-            print('Loading skyseg.onnx...')
-            # Download skyseg.onnx if it doesn't exist
-            if not os.path.exists("skyseg.onnx"):
-                print("Downloading skyseg.onnx...")
-                download_file_from_url("https://huggingface.co/JianyuanWang/skyseg/resolve/main/skyseg.onnx", "skyseg.onnx")
+        # if self.sky_mask:
+        #     print('Loading skyseg.onnx...')
+        #     # Download skyseg.onnx if it doesn't exist
+        #     if not os.path.exists("skyseg.onnx"):
+        #         print("Downloading skyseg.onnx...")
+        #         download_file_from_url("https://huggingface.co/JianyuanWang/skyseg/resolve/main/skyseg.onnx", "skyseg.onnx")
 
-            self.skyseg_session = onnxruntime.InferenceSession("skyseg.onnx")
+        #     self.skyseg_session = onnxruntime.InferenceSession("skyseg.onnx")
         
         self.chunk_indices = None # [(begin_idx, end_idx), ...]
 
