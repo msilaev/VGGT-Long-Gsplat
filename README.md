@@ -38,24 +38,24 @@ System Environment：
 
 #### Step 1: Dependency Installation
 
-Creating a virtual environment using conda (or miniconda)
+Creating a virtual environment using conda (or miniconda),
 
-```bash
+```cmd
 conda create -n vggt-long python=3.10
 conda activate vggt-long
 # pip version created by conda: 25.1
 ```
 
-Next, install `PyTorch`
+Next, install `PyTorch`,
 
-```bash
+```cmd
 pip install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu118
 # Verified to work with CUDA 11.8 and torch 2.2.0
 ```
 
-Then install other dependencies exactly the same as [VGGT](https://github.com/facebookresearch/vggt)
+Install other requirements,
 
-```bash
+```cmd
 pip install -r requirements.txt
 ```
 
@@ -63,7 +63,7 @@ pip install -r requirements.txt
 
 Download all the pre-trained weights needed:
 
-```bash
+```cmd
 bash ./scripts/download_weights.sh
 ```
 
@@ -73,7 +73,7 @@ You can skip the next two steps if you would like to run `VGGT-Long` in pure `Py
 
 We provide a Python-based Sim3 solver, so `VGGT-Long` can run the loop closure correction solving without compiling `C++` code. However, we still recommend installing the `C++` solver as it is more **stable and faster**.
 
-```bash
+```cmd
 python setup.py install
 ```
 
@@ -84,13 +84,13 @@ python setup.py install
 
 Install the `OpenCV C++ API`.
 
-```
+```cmd
 sudo apt-get install -y libopencv-dev
 ```
 
 Install `DBoW2`
 
-```
+```cmd
 cd DBoW2
 mkdir -p build && cd build
 cmake ..
@@ -101,7 +101,7 @@ cd ../..
 
 Install the image retrieval
 
-```
+```cmd
 pip install ./DPRetrieval
 ```
 
@@ -109,7 +109,7 @@ pip install ./DPRetrieval
 ### 🚀 3 - Running the code 
 
 
-```bash
+```cmd
 python vggt_long.py --image_dir ./path/to/your/image_sequence
 ```
 
