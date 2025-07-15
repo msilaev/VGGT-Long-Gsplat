@@ -120,7 +120,7 @@ In long-sequence scenarios, addressing CPU memory and GPU memory limitations has
 
 1. During operation, **sufficient disk space** must be reserved (approximately 50GiB for 4500-frame KITTI 00 sequences, or ~5GiB for 300-frame short sequences);
 
-2. The actual runtime depends heavily on your **disk I/O speed** and **memory-disk bandwidth**, which may vary significantly across different computer systems.
+2. The actual runtime depends on your **disk I/O speed** and **memory-disk bandwidth**, which may vary significantly across different computer systems.
 
 ## Acknowledgements
 
