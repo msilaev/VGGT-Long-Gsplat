@@ -1,13 +1,14 @@
 <p align="center">
 <p align="center">
-<h1 align="center">VGGT-Long: Chunk it, Loop it, Align it – Pushing VGGT’s Limits on Long RGB Sequences</h1>
+<h1 align="center">VGGT-Long: Chunk it, Loop it, Align it – Pushing VGGT’s Limits on Kilometer-scale Long RGB Sequences</h1>
 </p>
 
-![KITTI](./assets/kitti.png)
-![iPhone](./assets/iphone.png)
-![KITTI-05](./assets/kitti-05.png)
+![overview](./assets/overview.png)
+![method](./assets/method.png)
+![details](./assets/details.png)
 
 ### **Change Log**
+`[15 Jul 2025]` To help you better understand our project, we’ve updated some visualizations. I will release the VGGT-Long paper shortly after completing my other commitments.  
 
 `[14 Jun 2025]` GitHub code release.
 
@@ -113,6 +114,22 @@ pip install ./DPRetrieval
 python vggt_long.py --image_dir ./path/to/your/image_sequence
 ```
 
+### 🚨 4 - **Important Notice**: Memory Management & Requirements
+
+In long-sequence scenarios, addressing CPU memory constraints and GPU memory limitations has always been a core challenge. VGGT-Long resolves GPU memory limitations encountered by VGGT through chunk-based input partitioning. As for CPU memory constraints, we achieve lower CPU memory usage by storing intermediate results on the disk (the consequences of CPU memory overflow are far more severe than GPU issues - while GPU OOM may simply terminate the program, CPU OOM can cause complete system freeze, which we absolutely want to avoid). VGGT-Long automatically retrieves locally stored intermediate results when needed. Upon completion, these temporary files are automatically deleted to prevent excessive disk space consumption. This implementation implies two key considerations:
+
+1. During operation, sufficient disk space must be reserved (approximately 50GiB for 4500-frame KITTI 00 sequences, or ~5GiB for 300-frame short sequences);
+
+2. The actual runtime depends heavily on your disk I/O speed and memory-disk bandwidth, which may vary significantly across different computer systems.
+
 ## Acknowledgements
 
 Our project is based on [VGGT](https://github.com/facebookresearch/vggt), [DPV-SLAM](https://github.com/princeton-vl/DPVO), [GigaSLAM](https://github.com/DengKaiCQ/GigaSLAM). Our work would not have been possible without these excellent repositories.
+
+## More Exp:
+
+![kitti](./assets/vkitti.png)
+![waymo1](./assets/waymo-1.png)
+![waymo2](./assets/waymo-2.png)
+![waymo3](./assets/waymo-3.png)
+![waymo4](./assets/waymo-4.png)

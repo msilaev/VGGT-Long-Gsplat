@@ -4,6 +4,10 @@ huggingface_hub
 einops
 safetensors
 
+onnxruntime
+pyparsing
+importlib_metadata
+
 xformers == 0.0.24
 faiss-gpu
 pandas

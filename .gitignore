@@ -194,7 +194,9 @@ cython_debug/
 .cursorindexingignore
 
 __pycache__/
+__pycache__/*
 .vscode/
+.vscode/*
 
 # vggt-long
 /exps/*
@@ -207,3 +209,4 @@ __pycache__/
 *.onnx
 ORBvoc.txt
 exp.sh
+launch.json

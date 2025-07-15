@@ -587,9 +587,14 @@ if __name__ == '__main__':
     current_datetime = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     exp_dir = './exps'
 
+
     save_dir = os.path.join(
-            exp_dir, path[-3] + "_" + path[-2] + "_" + path[-1], current_datetime
+            exp_dir, image_dir.replace("/", "_"), current_datetime
         )
+    
+    # save_dir = os.path.join(
+    #     exp_dir, path[-3] + "_" + path[-2] + "_" + path[-1], current_datetime
+    # )
 
     if not os.path.exists(save_dir): 
         os.makedirs(save_dir)
