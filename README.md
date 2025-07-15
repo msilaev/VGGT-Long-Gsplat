@@ -116,11 +116,11 @@ python vggt_long.py --image_dir ./path/to/your/image_sequence
 
 ### 🚨 4 - **Important Notice**: Memory Management & Requirements
 
-In long-sequence scenarios, addressing CPU memory constraints and GPU memory limitations has always been a core challenge. VGGT-Long resolves GPU memory limitations encountered by VGGT through chunk-based input partitioning. As for CPU memory constraints, we achieve lower CPU memory usage by storing intermediate results on the disk (the consequences of CPU memory overflow are far more severe than GPU issues - while GPU OOM may simply terminate the program, CPU OOM can cause complete system freeze, which we absolutely want to avoid). VGGT-Long automatically retrieves locally stored intermediate results when needed. Upon completion, these temporary files are automatically deleted to prevent excessive disk space consumption. This implementation implies two key considerations:
+In long-sequence scenarios, addressing CPU memory and GPU memory limitations has always been a core challenge. VGGT-Long resolves **GPU** memory limitations encountered by VGGT through chunk-based input partitioning. As for **CPU** memory constraints, we achieve lower CPU memory usage by storing intermediate results on the **disk** (the consequences of CPU memory overflow are far more severe than GPU issues - while GPU OOM may simply terminate the program, **CPU OOM can cause complete system freeze**, which we absolutely want to avoid). VGGT-Long automatically retrieves locally stored intermediate results when needed. Upon completion, these temporary files are **automatically deleted** to prevent excessive disk space consumption. This implementation implies two key considerations:
 
-1. During operation, sufficient disk space must be reserved (approximately 50GiB for 4500-frame KITTI 00 sequences, or ~5GiB for 300-frame short sequences);
+1. During operation, **sufficient disk space** must be reserved (approximately 50GiB for 4500-frame KITTI 00 sequences, or ~5GiB for 300-frame short sequences);
 
-2. The actual runtime depends heavily on your disk I/O speed and memory-disk bandwidth, which may vary significantly across different computer systems.
+2. The actual runtime depends heavily on your **disk I/O speed** and **memory-disk bandwidth**, which may vary significantly across different computer systems.
 
 ## Acknowledgements
 
