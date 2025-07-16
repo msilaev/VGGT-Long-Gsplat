@@ -8,7 +8,7 @@ try:
     import dpretrieval
     dpretrieval.DPRetrieval
 except:
-    raise ModuleNotFoundError("Couldn't load dpretrieval. It may not be installed.")
+    print("Couldn't load dpretrieval. It may not be installed.")
 from collections import OrderedDict
 
 # from logging_utils import Log
