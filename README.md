@@ -125,6 +125,12 @@ pip install ./DPRetrieval
 python vggt_long.py --image_dir ./path/to/your/image_sequence
 ```
 
+You can modify the parameters in the `configs/base_config.yaml` file. If you have created multiple yaml files to explore the effects of different parameters, you can specify the file path by adding `--config` to the command. For example:
+
+```cmd
+python vggt_long.py --image_dir ./path/to/your/image_sequence --config ./configs/base_config.yaml
+```
+
 ### 🚨 4 - **Important Notice**: Memory Management & Requirements
 
 In long-sequence scenarios, addressing CPU memory and GPU memory limitations has always been a core challenge. VGGT-Long resolves **GPU** memory limitations encountered by VGGT through chunk-based input partitioning. As for **CPU** memory constraints, we achieve lower CPU memory usage by storing intermediate results on the **disk** (the consequences of CPU memory overflow are far more severe than GPU issues - while GPU OOM may simply terminate the program, **CPU OOM can cause complete system freeze**, which we absolutely want to avoid). VGGT-Long automatically retrieves locally stored intermediate results when needed. Upon completion, these temporary files are **automatically deleted** to prevent excessive disk space consumption. This implementation implies two key considerations:
