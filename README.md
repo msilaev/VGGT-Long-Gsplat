@@ -122,13 +122,13 @@ pip install ./DPRetrieval
 
 
 ```cmd
-python vggt_long.py --image_dir ./path/to/your/image_sequence
+python vggt_long.py --image_dir ./path_of_images
 ```
 
 You can modify the parameters in the `configs/base_config.yaml` file. If you have created multiple yaml files to explore the effects of different parameters, you can specify the file path by adding `--config` to the command. For example:
 
 ```cmd
-python vggt_long.py --image_dir ./path/to/your/image_sequence --config ./configs/base_config.yaml
+python vggt_long.py --image_dir ./path_of_images --config ./configs/base_config.yaml
 ```
 
 ### 🚨 4 - **Important Notice**: Memory Management & Requirements
