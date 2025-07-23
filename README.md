@@ -1,14 +1,25 @@
 <p align="center">
 <p align="center">
-<h1 align="center">VGGT-Long: Chunk it, Loop it, Align it – Pushing VGGT’s Limits on Kilometer-scale Long RGB Sequences</h1>
+<h1 align="center">VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences</h1>
 </p>
+
+This repository contains the source code for our work:
+
+[VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences](https://arxiv.org/abs/2507.16443)
+
+**Abstrat:** Foundation models for 3D vision have recently demonstrated remarkable capabilities in 3D perception. However, extending these models to large-scale RGB stream 3D reconstruction remains challenging due to memory limitations. In this work, we propose **VGGT-Long**, a simple yet effective system that pushes the limits of monocular 3D reconstruction to **kilometer-scale, unbounded outdoor environments**. Our approach addresses the scalability bottlenecks of existing models through a chunk-based processing strategy combined with overlapping alignment and lightweight loop closure optimization. Without requiring camera calibration, depth supervision or model retraining, VGGT-Long achieves trajectory and reconstruction performance comparable to traditional methods. We evaluate our method on KITTI, Waymo, and Virtual KITTI datasets. VGGT-Long not only runs successfully on long RGB sequences where foundation models typically fail, but also produces accurate and consistent geometry across various conditions. Our results highlight the potential of leveraging foundation models for scalable monocular 3D scene in real-world settings, especially for autonomous driving scenarios.
+
 
 ![overview](./assets/overview.png)
 ![method](./assets/method.png)
 ![details](./assets/details.png)
 
 ### **Change Log**
-`[15 Jul 2025]` To help you better understand our project, we’ve updated some visualizations. I will release the VGGT-Long paper shortly after completing my other commitments.  
+`[23 Jul 2025]` Fixed some bugs in `scripts/download_weights.sh`.
+
+`[22 Jul 2025]` Arxiv submitted.
+
+`[15 Jul 2025]` To help you better understand our project, we’ve updated some visualizations.
 
 `[14 Jun 2025]` GitHub code release.
 
@@ -126,7 +137,21 @@ In long-sequence scenarios, addressing CPU memory and GPU memory limitations has
 
 Our project is based on [VGGT](https://github.com/facebookresearch/vggt), [DPV-SLAM](https://github.com/princeton-vl/DPVO), [GigaSLAM](https://github.com/DengKaiCQ/GigaSLAM). Our work would not have been possible without these excellent repositories.
 
-## More Exp:
+## Citation
+
+If you find our work helpful, please consider citing:
+
+```
+@article{deng2025vggtlong,
+      title={VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences}, 
+      author={Kai Deng and Zexin Ti and Jiawei Xu and Jian Yang and Jin Xie},
+      year={2025},
+      journal={arXiv preprint arXiv:2507.16443},
+}
+```
+
+
+## More Exp
 
 ![kitti](./assets/vkitti.png)
 ![waymo1](./assets/waymo-1.png)
