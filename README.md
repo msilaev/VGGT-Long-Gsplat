@@ -145,8 +145,8 @@ If you find our work helpful, please consider citing:
 @article{deng2025vggtlong,
       title={VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences}, 
       author={Kai Deng and Zexin Ti and Jiawei Xu and Jian Yang and Jin Xie},
-      year={2025},
       journal={arXiv preprint arXiv:2507.16443},
+      year={2025}
 }
 ```
 
