@@ -7,7 +7,7 @@ Weights:
 Model:
   chunk_size: 60
   overlap: 30
-  loop_chunk_size: 40
+  loop_chunk_size: 20 # imgs of loop chunk = 2 * loop_chunk_size
   loop_enable: True
   useDBoW: False
   delete_temp_files: True
@@ -22,7 +22,6 @@ Model:
     conf_threshold_coef: 0.75 # conf_threshold = np.mean(confs) * conf_threshold_coef
 
 Loop:
-
   DBoW:
     thresh: 0.034
     num_repeat: 3
