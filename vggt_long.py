@@ -268,13 +268,6 @@ class VGGT_Long:
 
         print("Aligning all the chunks...")
         for chunk_idx in range(len(self.chunk_indices)-1):
-            print(chunk_idx, chunk_idx+1)
-
-            chunk_data = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
-            
-            points = chunk_data['world_points'].reshape(-1, 3)
-            colors = (chunk_data['images'].transpose(0, 2, 3, 1).reshape(-1, 3) * 255).astype(np.uint8)
-            confs = chunk_data['world_points_conf'].reshape(-1)
 
             print(f"Aligning {chunk_idx} and {chunk_idx+1} (Total {len(self.chunk_indices)-1})")
             chunk_data1 = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
@@ -537,9 +530,9 @@ class VGGT_Long:
             - Aligned results
             - Loop results
             
-            Each submap typically occupies ~350 MiB of disk space. For an input stream of 4000 images,
-            the total temporary files can consume 60-90 GiB of storage. This cleanup is essential to
-            prevent unnecessary disk space usage after processing completes.
+            ~50 GiB for 4500-frame KITTI 00, 
+            ~35 GiB for 2700-frame KITTI 05, 
+            or ~5 GiB for 300-frame short seq.
         '''
         if not self.delete_temp_files:
             return
@@ -599,6 +592,9 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir): 
         os.makedirs(save_dir)
         print(f'The exp will be saved under dir: {save_dir}')
+
+    if config['Model']['align_method'] == 'numba':
+        warmup_numba()
 
     vggt_long = VGGT_Long(image_dir, save_dir, config)
     vggt_long.run()

@@ -4,6 +4,8 @@ huggingface_hub
 einops
 safetensors
 
+numba==0.61.2
+
 onnxruntime
 pyparsing
 importlib_metadata

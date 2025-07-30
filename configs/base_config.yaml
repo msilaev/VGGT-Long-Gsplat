@@ -11,6 +11,7 @@ Model:
   loop_enable: True
   useDBoW: False
   delete_temp_files: True
+  align_method: 'numba' # 'numba' or 'numpy', use 'numba' would be faster
 
   IRLS:
     delta: 0.1
