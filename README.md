@@ -179,9 +179,9 @@ If you find our work helpful, please consider citing:
 
 The `VGGT-Long` codebase follows a dual-license structure:
 
-1. For components derived from `VGGT`, please refer to `./LICENSE-VGGT.txt` for applicable terms;
+1. For components derived from `VGGT`, please refer to `./LICENSE-VGGT.txt` for applicable terms. For commercial use, please ensure to utilize the commercially licensed version of the pre-trained weight. [Link of VGGT-1B-Commercial](https://huggingface.co/facebook/VGGT-1B-Commercial)
 
-2. Other codes is licensed under the MIT License. Please refer to `./LICENSE-Others.txt`.
+2. Other parts are under the MIT License. Please refer to `./LICENSE-Others.txt`.
 
 ## More Experiments
 
