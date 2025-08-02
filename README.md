@@ -16,7 +16,7 @@ This repository contains the source code for our work:
 
 ### **Changelog**
 
-`[02 Aug 2025]` Updated the licensing terms of `VGGT-Long` to reflect the upstream dependency `VGGT`’s license. `VGGT-Long` is now distributed under a dual-license model to ensure compliance. Please see the [Licenses Section](#licenses) for full details.
+`[02 Aug 2025]` Updated the licensing terms of `VGGT-Long` to reflect the upstream dependency license (See [VGGT](https://github.com/facebookresearch/vggt) for the changes). `VGGT-Long` is now distributed under a dual-license model to ensure compliance. Please see the [Licenses Section](#licenses) for full details.
 
 `[30 Jul 2025]` Chunk Align speed up (`0.273 s/iter`$\rightarrow$`0.175 s/iter` on my machine).
 
