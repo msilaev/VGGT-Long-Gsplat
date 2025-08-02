@@ -16,7 +16,7 @@ This repository contains the source code for our work:
 
 ### **Changelog**
 
-`[02 Aug 2025]` Updated the licensing terms of `VGGT-Long` to reflect the upstream dependency license (See [VGGT](https://github.com/facebookresearch/vggt) for the changes). `VGGT-Long` is now distributed under a dual-license model to ensure compliance. Please see the [Licenses Section](#licenses) for full details.
+`[02 Aug 2025]` Updated the licensing terms of `VGGT-Long` to reflect the upstream dependency license (See [VGGT](https://github.com/facebookresearch/vggt) for the changes). Please see the [Licenses Section](#licenses) for full details.
 
 `[30 Jul 2025]` Chunk Align speed up (`0.273 s/iter`$\rightarrow$`0.175 s/iter` on my machine).
 
@@ -175,13 +175,9 @@ If you find our work helpful, please consider citing:
 }
 ```
 
-## Licenses
+## License
 
-The `VGGT-Long` codebase follows a dual-license structure:
-
-1. For components derived from `VGGT` (including the `./vggt_long.py`), please refer to `./LICENSE-VGGT.txt` for applicable terms. For commercial use, please follow the `VGGT`'s license that ensure to utilize the commercial version of the pre-trained weight. [Link of VGGT-1B-Commercial](https://huggingface.co/facebook/VGGT-1B-Commercial)
-
-2. For other parts that not bound to `VGGT` are under the GPL-3.0 license. Please refer to `./LICENSE-Others.txt`.
+The `VGGT-Long` codebase follows `VGGT`'s license, please refer to `./LICENSE.txt` for applicable terms. For commercial use, please follow the link [VGGT](https://github.com/facebookresearch/vggt) that should utilize the commercial version of the pre-trained weight. [Link of VGGT-1B-Commercial](https://huggingface.co/facebook/VGGT-1B-Commercial)
 
 ## More Experiments
 
