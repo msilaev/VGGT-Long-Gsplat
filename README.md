@@ -173,6 +173,13 @@ If you find our work helpful, please consider citing:
 }
 ```
 
+## Licenses
+
+The `VGGT-Long` codebase follows a dual-license structure:
+
+1. For components derived from `VGGT`, please refer to `./LICENSE-VGGT.txt` for applicable terms;
+
+2. Other codes is licensed under the MIT License. Please refer to `./LICENSE-Others.txt`.
 
 ## More Experiments
 
