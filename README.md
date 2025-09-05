@@ -14,7 +14,9 @@ This repository contains the source code for our work:
 ![method](./assets/method.png)
 ![details](./assets/details.png)
 
-### **Changelog**
+### **Updates**
+
+`[04 Sep 2025]` We have developed [Pi-Long](https://github.com/DengKaiCQ/Pi-Long) as a complementary project to `Pi3` and `VGGT-Long`. Benefiting from `Pi3`'s outstanding performance, `Pi-Long` performs even better at the kilometer scale. Feel free to check it out.
 
 `[02 Aug 2025]` Updated the licensing terms of `VGGT-Long` to reflect the upstream dependency license (See [VGGT](https://github.com/facebookresearch/vggt) for the changes). Please see the [License Section](#license) for full details.
 
@@ -167,11 +169,14 @@ Our project is based on [VGGT](https://github.com/facebookresearch/vggt), [DPV-S
 If you find our work helpful, please consider citing:
 
 ```
-@article{deng2025vggtlong,
+@misc{deng2025vggtlongchunkitloop,
       title={VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences}, 
       author={Kai Deng and Zexin Ti and Jiawei Xu and Jian Yang and Jin Xie},
-      journal={arXiv preprint arXiv:2507.16443},
-      year={2025}
+      year={2025},
+      eprint={2507.16443},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2507.16443}, 
 }
 ```
 

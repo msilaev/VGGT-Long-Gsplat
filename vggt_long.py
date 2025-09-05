@@ -65,7 +65,8 @@ class LongSeqResult:
         self.combined_depth_confs = []
         self.combined_world_points = []
         self.combined_world_points_confs = []
-        self.all_camera_poses = [] 
+        self.all_camera_poses = []
+        self.all_camera_intrinsics = [] 
 
 class VGGT_Long:
     def __init__(self, image_dir, save_dir, config):
@@ -94,7 +95,8 @@ class VGGT_Long:
         os.makedirs(self.pcd_dir, exist_ok=True)
         
         self.all_camera_poses = []
-
+        self.all_camera_intrinsics = [] 
+        
         self.delete_temp_files = self.config['Model']['delete_temp_files']
 
         print('Loading model...')
@@ -217,8 +219,10 @@ class VGGT_Long:
                     
         if not is_loop and range_2 is None:
             extrinsics = predictions['extrinsic']
+            intrinsics = predictions['intrinsic']
             chunk_range = self.chunk_indices[chunk_idx]
             self.all_camera_poses.append((chunk_range, extrinsics))
+            self.all_camera_intrinsics.append((chunk_range, intrinsics))
 
         predictions['depth'] = np.squeeze(predictions['depth'])
 
@@ -465,16 +469,20 @@ class VGGT_Long:
         print("Saving all camera poses to txt file...")
         
         all_poses = [None] * len(self.img_list)
+        all_intrinsics = [None] * len(self.img_list)
         
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
+        _, first_chunk_intrinsics = self.all_camera_intrinsics[0]
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
             w2c = np.eye(4)
             w2c[:3, :] = first_chunk_extrinsics[i] 
             c2w = np.linalg.inv(w2c)
             all_poses[idx] = c2w
+            all_intrinsics[idx] = first_chunk_intrinsics[i]
 
         for chunk_idx in range(1, len(self.all_camera_poses)):
             chunk_range, chunk_extrinsics = self.all_camera_poses[chunk_idx]
+            _, chunk_intrinsics = self.all_camera_intrinsics[chunk_idx]
             s, R, t = self.sim3_list[chunk_idx-1]   # When call self.save_camera_poses(), all the sim3 are aligned to the first chunk.
             
             S = np.eye(4)
@@ -489,7 +497,7 @@ class VGGT_Long:
                 transformed_c2w = S @ c2w  # Be aware of the left multiplication!
 
                 all_poses[idx] = transformed_c2w
-
+                all_intrinsics[idx] = chunk_intrinsics[i]
         
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:
@@ -498,6 +506,17 @@ class VGGT_Long:
                 f.write(' '.join([str(x) for x in flat_pose]) + '\n')
         
         print(f"Camera poses saved to {poses_path}")
+
+        intrinsics_path = os.path.join(self.output_dir, 'intrinsic.txt')
+        with open(intrinsics_path, 'w') as f:
+            for intrinsic in all_intrinsics:
+                fx = intrinsic[0, 0]
+                fy = intrinsic[1, 1]
+                cx = intrinsic[0, 2]
+                cy = intrinsic[1, 2]
+                f.write(f'{fx} {fy} {cx} {cy}\n')
+
+        print(f"Camera intrinsics saved to {intrinsics_path}")
         
         ply_path = os.path.join(self.output_dir, 'camera_poses.ply')
         with open(ply_path, 'w') as f:
@@ -564,6 +583,24 @@ class VGGT_Long:
         print(f"Saved disk space: {total_space/1024/1024/1024:.4f} GiB")
 
 
+import shutil
+def copy_file(src_path, dst_dir):
+    try:
+        os.makedirs(dst_dir, exist_ok=True)
+        
+        dst_path = os.path.join(dst_dir, os.path.basename(src_path))
+        
+        shutil.copy2(src_path, dst_path)
+        print(f"config yaml file has been copied to: {dst_path}")
+        return dst_path
+        
+    except FileNotFoundError:
+        print("File Not Found")
+    except PermissionError:
+        print("Permission Error")
+    except Exception as e:
+        print(f"Copy Error: {e}")
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='VGGT-Long')
@@ -592,6 +629,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir): 
         os.makedirs(save_dir)
         print(f'The exp will be saved under dir: {save_dir}')
+        copy_file(args.config, save_dir)
 
     if config['Model']['align_method'] == 'numba':
         warmup_numba()
