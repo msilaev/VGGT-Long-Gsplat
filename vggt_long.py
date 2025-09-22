@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 import cv2
 
 import gc
+import torch.nn.functional as F
 
 try:
     import onnxruntime
@@ -19,7 +20,7 @@ from LoopModels.LoopModel import LoopDetector
 from LoopModelDBoW.retrieval.retrieval_dbow import RetrievalDBOW
 # from loop_utils.visual_util import segment_sky, download_file_from_url
 from vggt.models.vggt import VGGT
-from vggt.utils.load_fn import load_and_preprocess_images
+from vggt.utils.load_fn import load_and_preprocess_images, load_and_preprocess_images_square
 from vggt.utils.geometry import closed_form_inverse_se3, unproject_depth_map_to_point_map
 from vggt.utils.pose_enc import pose_encoding_to_extri_intri
 
@@ -61,12 +62,19 @@ class LongSeqResult:
     def __init__(self):
         self.combined_extrinsics = []
         self.combined_intrinsics = []
-        self.combined_depth_maps = []
-        self.combined_depth_confs = []
+
         self.combined_world_points = []
         self.combined_world_points_confs = []
         self.all_camera_poses = []
-        self.all_camera_intrinsics = [] 
+        self.all_camera_intrinsics = []
+
+## New addition
+
+        self.combined_depth_maps = []
+        self.combined_depth_confs = []
+
+        self.all_camera_depths = []
+        self.all_camera_depth_confs = []
 
 class VGGT_Long:
     def __init__(self, image_dir, save_dir, config):
@@ -97,6 +105,10 @@ class VGGT_Long:
         self.all_camera_poses = []
         self.all_camera_intrinsics = [] 
         
+        ## New addition
+        self.all_camera_depths = []
+        self.all_camera_depths_confs = []
+
         self.delete_temp_files = self.config['Model']['delete_temp_files']
 
         print('Loading model...')
@@ -183,7 +195,17 @@ class VGGT_Long:
             start_idx, end_idx = range_2
             chunk_image_paths += self.img_list[start_idx:end_idx]
 
-        images = load_and_preprocess_images(chunk_image_paths).to(self.device)
+        #images = load_and_preprocess_images(chunk_image_paths).to(self.device)
+
+        vggt_fixed_resolution = 518
+        img_load_resolution = 1024
+
+        images, _ = load_and_preprocess_images_square(chunk_image_paths, img_load_resolution)
+        images = images.to(self.device)
+        #original_coords = original_coords.to(self.device)
+
+        images = F.interpolate(images, size=(vggt_fixed_resolution, vggt_fixed_resolution), mode="bilinear", align_corners=False)
+
         print(f"Loaded {len(images)} images")
         
         # images: [B, 3, H, W]
@@ -220,9 +242,16 @@ class VGGT_Long:
         if not is_loop and range_2 is None:
             extrinsics = predictions['extrinsic']
             intrinsics = predictions['intrinsic']
+            
             chunk_range = self.chunk_indices[chunk_idx]
             self.all_camera_poses.append((chunk_range, extrinsics))
             self.all_camera_intrinsics.append((chunk_range, intrinsics))
+
+            ##### New addition
+            depth_maps = np.squeeze(predictions['depth'])
+            depth_confs = np.squeeze(predictions['depth_conf'])
+            self.all_camera_depths.append((chunk_range, depth_maps))
+            self.all_camera_depths_confs.append((chunk_range, depth_confs))
 
         predictions['depth'] = np.squeeze(predictions['depth'])
 
@@ -263,6 +292,7 @@ class VGGT_Long:
         print(f"Processing {len(self.img_list)} images in {num_chunks} chunks of size {self.chunk_size} with {self.overlap} overlap")
 
         for chunk_idx in range(len(self.chunk_indices)):
+
             print(f'[Progress]: {chunk_idx}/{len(self.chunk_indices)}')
             self.process_single_chunk(self.chunk_indices[chunk_idx], chunk_idx=chunk_idx)
             torch.cuda.empty_cache()
@@ -470,19 +500,38 @@ class VGGT_Long:
         
         all_poses = [None] * len(self.img_list)
         all_intrinsics = [None] * len(self.img_list)
+        all_depths = [None] * len(self.img_list)
+        all_depth_confs = [None] * len(self.img_list)
         
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
         _, first_chunk_intrinsics = self.all_camera_intrinsics[0]
+
+
+        first_chunk_depths = self.all_camera_depths[0]
+        first_chunk_depths_confs = self.all_camera_depths_confs[0]
+
+
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
             w2c = np.eye(4)
             w2c[:3, :] = first_chunk_extrinsics[i] 
             c2w = np.linalg.inv(w2c)
             all_poses[idx] = c2w
             all_intrinsics[idx] = first_chunk_intrinsics[i]
+            # added for depth
+            all_depths[idx] = first_chunk_depths[i]
+            all_depth_confs[idx] = first_chunk_depths_confs[i]
 
         for chunk_idx in range(1, len(self.all_camera_poses)):
+            
             chunk_range, chunk_extrinsics = self.all_camera_poses[chunk_idx]
             _, chunk_intrinsics = self.all_camera_intrinsics[chunk_idx]
+
+            # added for depth
+            _, chunk_depths = self.all_camera_depths[chunk_idx]
+            _, chunk_depths_confs = self.all_camera_depths_confs[chunk_idx]
+
+
+
             s, R, t = self.sim3_list[chunk_idx-1]   # When call self.save_camera_poses(), all the sim3 are aligned to the first chunk.
             
             S = np.eye(4)
@@ -498,6 +547,10 @@ class VGGT_Long:
 
                 all_poses[idx] = transformed_c2w
                 all_intrinsics[idx] = chunk_intrinsics[i]
+
+                # New addition for depth
+                all_depths[idx] = chunk_depths[i]
+                all_depth_confs[idx] = chunk_depths_confs[i]
         
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:
@@ -539,7 +592,23 @@ class VGGT_Long:
         
         print(f"Camera poses visualization saved to {ply_path}")
 
-    
+        # New addition
+        
+        depth_path = os.path.join(self.output_dir, 'depth_maps.npy')
+        np.save(depth_path, all_depths)
+        print(f"Depth maps saved to {depth_path}")
+        depth_conf_path = os.path.join(self.output_dir, 'depth_confs.npy')
+        np.save(depth_conf_path, all_depth_confs)
+        print(f"Depth confidence maps saved to {depth_conf_path}")
+
+        intrinsics_path = os.path.join(self.output_dir, 'intrinsic.npy')
+        np.save(intrinsics_path, all_intrinsics)
+        print(f"Camera intrinsics saved to {intrinsics_path}")
+
+        extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
+        np.save(extrinsic_path, all_poses)
+        print(f"Camera extrinsics saved to {extrinsic_path}")
+
     def close(self):
         '''
             Clean up temporary files and calculate reclaimed disk space.
@@ -618,13 +687,13 @@ if __name__ == '__main__':
     exp_dir = './exps'
 
 
+    #save_dir = os.path.join(
+    #        exp_dir, image_dir.replace("/", "_"), current_datetime
+    #    )
+
     save_dir = os.path.join(
-            exp_dir, image_dir.replace("/", "_"), current_datetime
-        )
-    
-    # save_dir = os.path.join(
-    #     exp_dir, path[-3] + "_" + path[-2] + "_" + path[-1], current_datetime
-    # )
+        exp_dir, path[-3] + "_" + path[-2] + "_" + path[-1]
+    )
 
     if not os.path.exists(save_dir): 
         os.makedirs(save_dir)
@@ -647,4 +716,15 @@ if __name__ == '__main__':
     print("Saving all the point clouds")
     merge_ply_files(input_dir, all_ply_path)
     print('VGGT Long done.')
+    
+    # Print helpful command for next step
+    print("")
+    print("=" * 60)
+    print("To run COLMAP demo, use:")
+    print(f'python demo_colmap.py --scene_dir "{image_dir}" --output_dir "{save_dir}" --use_ba')
+    print("")
+    print("Or use the pipeline script:")
+    print(f'./pipeline.ps1 -ImageDir "{image_dir}" -UseBa')
+    print("=" * 60)
+    
     sys.exit()
