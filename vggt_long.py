@@ -507,8 +507,8 @@ class VGGT_Long:
         _, first_chunk_intrinsics = self.all_camera_intrinsics[0]
 
 
-        first_chunk_depths = self.all_camera_depths[0]
-        first_chunk_depths_confs = self.all_camera_depths_confs[0]
+        _, first_chunk_depths = self.all_camera_depths[0]
+        _, first_chunk_depths_confs = self.all_camera_depths_confs[0]
 
 
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
