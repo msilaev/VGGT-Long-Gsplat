@@ -248,8 +248,10 @@ class VGGT_Long:
             self.all_camera_intrinsics.append((chunk_range, intrinsics))
 
             ##### New addition
-            depth_maps = np.squeeze(predictions['depth'])
-            depth_confs = np.squeeze(predictions['depth_conf'])
+            depth_maps = predictions['depth']
+
+            print(f"shape of depth maps: {depth_maps.shape}")
+            depth_confs = predictions['depth_conf']
             self.all_camera_depths.append((chunk_range, depth_maps))
             self.all_camera_depths_confs.append((chunk_range, depth_confs))
 
