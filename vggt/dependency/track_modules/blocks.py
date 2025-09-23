@@ -306,8 +306,10 @@ class CorrBlock:
         out = torch.cat(out_pyramid, dim=-1).contiguous()  # B, S, N, LRR*2
         return out
 
-    def corr(self, targets):
+    def corr(self, targets, overlap_window=None):
         B, S, N, C = targets.shape
+
+        print(f"shape of targets: {targets.shape}")
         if self.multiple_track_feats:
             targets_split = targets.split(C // self.num_levels, dim=-1)
             B, S, N, C = targets_split[0].shape
@@ -320,10 +322,50 @@ class CorrBlock:
         self.corrs_pyramid = []
         for i, fmaps in enumerate(self.fmaps_pyramid):
             *_, H, W = fmaps.shape
-            fmap2s = fmaps.view(B, S, C, H * W)  # B S C H W ->  B S C (H W)
-            if self.multiple_track_feats:
-                fmap1 = targets_split[i]
-            corrs = torch.matmul(fmap1, fmap2s)
-            corrs = corrs.view(B, S, N, H, W)  # B S N (H W) -> B S N H W
+            
+            if overlap_window is not None:
+                # Memory-efficient sparse correlation for overlapping frames only
+                corrs = self._compute_sparse_correlation(fmap1, fmaps, overlap_window, i)
+            else:
+                # Original dense correlation (memory expensive)
+                fmap2s = fmaps.view(B, S, C, H * W)  # B S C H W ->  B S C (H W)
+                if self.multiple_track_feats:
+                    fmap1 = targets_split[i]
+                corrs = torch.matmul(fmap1, fmap2s)
+                corrs = corrs.view(B, S, N, H, W)  # B S N (H W) -> B S N H W
+                
             corrs = corrs / torch.sqrt(torch.tensor(C).float())
             self.corrs_pyramid.append(corrs)
+    
+    def _compute_sparse_correlation(self, fmap1, fmaps, overlap_window, level_idx):
+        """
+        Compute correlation only between overlapping frames.
+        Memory: O(S * window_size) instead of O(S^2)
+        """
+        B, S, N, C = fmap1.shape
+        *_, H, W = fmaps.shape
+        
+        # Initialize sparse correlation tensor
+        corrs = torch.zeros(B, S, N, H, W, device=fmap1.device, dtype=fmap1.dtype)
+        
+        # Compute correlations only within overlap windows
+        for s in range(S):
+            # Define overlap window for frame s
+            start_frame = max(0, s - overlap_window // 2)
+            end_frame = min(S, s + overlap_window // 2 + 1)
+            
+            # Get query features for frame s
+            query_feats = fmap1[:, s:s+1, :, :]  # (B, 1, N, C)
+            
+            # Get search features for overlapping frames
+            search_frames = fmaps[:, start_frame:end_frame, :, :, :]  # (B, window_size, C, H, W)
+            search_feats = search_frames.view(B, end_frame-start_frame, C, H * W)
+            
+            # Compute correlation only for overlapping frames
+            frame_corrs = torch.matmul(query_feats, search_feats)  # (B, 1, N, window_size*H*W)
+            frame_corrs = frame_corrs.view(B, 1, N, end_frame-start_frame, H, W)
+            
+            # Place results in sparse tensor
+            corrs[:, s:s+1, :, :, :] = frame_corrs[:, :, :, s-start_frame:s-start_frame+1, :, :].squeeze(3)
+            
+        return corrs

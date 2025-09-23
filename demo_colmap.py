@@ -111,6 +111,13 @@ def demo_fn(args):
     print(f"Using device: {device}")
     print(f"Using dtype: {dtype}")
 
+    # Clear GPU memory before starting (important for long sequences)
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+        print(f"GPU memory cleared. Available: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+        print(f"GPU memory free: {torch.cuda.memory_reserved(0) / 1024**3:.1f} GB")
+
     # # Run VGGT for camera and depth estimation
     # model = VGGT()
     # _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
@@ -136,6 +143,12 @@ def demo_fn(args):
     images = images.to(device)
     original_coords = original_coords.to(device)
     print(f"Loaded {len(images)} images from {image_dir}")
+    
+    # Monitor GPU memory after loading images
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated(0) / 1024**3
+        cached = torch.cuda.memory_reserved(0) / 1024**3
+        print(f"GPU memory after loading images - Allocated: {allocated:.1f} GB, Cached: {cached:.1f} GB")
 
     # # Run VGGT to estimate camera and depth
     # # Run with 518x518 images

@@ -113,7 +113,7 @@ class BaseTrackerPredictor(nn.Module):
 
             # Compute the correlation (check the implementation of CorrBlock)
 
-            fcorr_fn.corr(track_feats)
+            fcorr_fn.corr(track_feats, overlap_window=10)  # Only correlate with ±5 neighboring frames
             fcorrs = fcorr_fn.sample(coords)  # B, S, N, corrdim
 
             corrdim = fcorrs.shape[3]
