@@ -56,7 +56,7 @@ def parse_args():
     parser.add_argument("--query_frame_num", type=int, default=8, help="Number of frames to query")
     parser.add_argument("--max_query_pts", type=int, default=4096, help="Maximum number of query points")
     parser.add_argument(
-        "--fine_tracking", action="store_true", default=True, help="Use fine tracking (slower but more accurate)"
+        "--fine_tracking", action="store_true", default=False, help="Use fine tracking (slower but more accurate)"
     )
     parser.add_argument(
         "--conf_thres_value", type=float, default=5.0, help="Confidence threshold value for depth filtering (wo BA)"
