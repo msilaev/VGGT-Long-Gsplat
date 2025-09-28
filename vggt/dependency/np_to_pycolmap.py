@@ -66,7 +66,10 @@ def batch_np_matrix_to_pycolmap(
 
     assert masks is not None
 
+    print("Inliers per frame:", masks.sum(1).min(), "Min required:", min_inlier_per_frame)
+
     if masks.sum(1).min() < min_inlier_per_frame:
+        
         print(f"Not enough inliers per frame, skip BA.")
         return None, None
 
