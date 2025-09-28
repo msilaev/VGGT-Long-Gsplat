@@ -622,9 +622,26 @@ class VGGT_Long:
         np.save(intrinsics_path, all_intrinsics)
         print(f"Camera intrinsics saved to {intrinsics_path}")
 
+        # Convert aligned C2W poses back to W2C format for demo_colmap.py
+        all_poses_w2c = []
+        for pose_c2w in all_poses:
+            # Efficient analytical inverse for rigid body transformation
+            R = pose_c2w[:3, :3]  # 3x3 rotation matrix
+            t = pose_c2w[:3, 3]   # 3x1 translation vector
+            # W2C = [R^T | -R^T * t]
+            R_T = R.T
+            w2c_translation = -R_T @ t
+            w2c = np.hstack([R_T, w2c_translation.reshape(-1, 1)])
+            all_poses_w2c.append(w2c)  # Save as 3x4 W2C format
+        
         extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
-        np.save(extrinsic_path, all_poses_original)
-        print(f"Camera extrinsics saved to {extrinsic_path}")
+        np.save(extrinsic_path, np.array(all_poses_w2c))
+        print(f"Camera extrinsics (W2C aligned) saved to {extrinsic_path}")
+        
+        # Also save C2W format for backward compatibility
+        c2w_path = os.path.join(self.output_dir, 'extrinsic_c2w.npy')
+        np.save(c2w_path, all_poses)
+        print(f"Camera extrinsics (C2W aligned) saved to {c2w_path}")
 
     def close(self):
         '''
