@@ -533,7 +533,6 @@ class VGGT_Long:
             _, chunk_depths_confs = self.all_camera_depths_confs[chunk_idx]
 
 
-
             s, R, t = self.sim3_list[chunk_idx-1]   # When call self.save_camera_poses(), all the sim3 are aligned to the first chunk.
             
             S = np.eye(4)

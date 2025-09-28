@@ -154,7 +154,6 @@ def demo_fn(args):
     # # Run with 518x518 images
     # extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
 
-
     image_dir = args.scene_dir
     path = image_dir.split("/")
     exp_dir = './exps'
@@ -165,8 +164,6 @@ def demo_fn(args):
     #save_dir = os.path.join(
     #        exp_dir, image_dir.replace("/", "_"), current_datetime
     #    )
-
-
 
     depth_path = os.path.join(data_dir, 'depth_maps.npy')
     depth_map = np.load(depth_path)
@@ -183,7 +180,9 @@ def demo_fn(args):
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
-    points_3d = unproject_depth_map_to_point_map(depth_map, extrinsic, intrinsic)
+    extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
+
+    points_3d = unproject_depth_map_to_point_map(depth_map, extrinsics_w2c[:,:3,:], intrinsic)
 
     if args.use_ba:
         image_size = np.array(images.shape[-2:])
@@ -191,23 +190,38 @@ def demo_fn(args):
         shared_camera = args.shared_camera
 
         with torch.cuda.amp.autocast(dtype=dtype):
-            # Predicting Tracks
-            # Using VGGSfM tracker instead of VGGT tracker for efficiency
-            # VGGT tracker requires multiple backbone runs to query different frames (this is a problem caused by the training process)
-            # Will be fixed in VGGT v2
-
-            # You can also change the pred_tracks to tracks from any other methods
-            # e.g., from COLMAP, from CoTracker, or by chaining 2D matches from Lightglue/LoFTR.
-            pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
-                images,
-                conf=depth_conf,
-                points_3d=points_3d,
-                masks=None,
-                max_query_pts=args.max_query_pts,
-                query_frame_num=args.query_frame_num,
-                keypoint_extractor="aliked+sp",
-                fine_tracking=args.fine_tracking,
-            )
+            # Predicting Tracks - Multiple options for memory efficiency
+            # Using alternative tracking methods for long sequences (165+ frames)
+            
+            # Generate RGB colors for 3D points (needed for all tracking methods)
+            points_rgb = F.interpolate(images, size=(518, 518), mode="bilinear", align_corners=False)
+            points_rgb = (points_rgb.cpu().numpy() * 255).astype(np.uint8)
+            points_rgb = points_rgb.transpose(0, 2, 3, 1)  # (S, H, W, 3)
+            
+            try:
+                # Try COLMAP tracking first (most memory efficient for long sequences)
+                print("Using COLMAP tracking (production quality, memory efficient)")
+                
+                from alternative_tracking.colmap_tracking import predict_tracks_with_colmap
+                
+                pred_tracks, pred_vis_scores, pred_confs = predict_tracks_with_colmap(
+                    images,
+                    conf=depth_conf,                    
+                    max_query_pts=args.max_query_pts
+                )
+                
+            except ImportError:
+                print("COLMAP tracking not available, falling back to VGGSfM (may cause OOM)")
+                pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
+                    images,
+                    conf=depth_conf,
+                    points_3d=points_3d,
+                    masks=None,
+                    max_query_pts=args.max_query_pts,
+                    query_frame_num=args.query_frame_num,
+                    keypoint_extractor="aliked+sp",
+                    fine_tracking=args.fine_tracking,
+                )
 
             torch.cuda.empty_cache()
 

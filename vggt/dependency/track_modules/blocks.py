@@ -341,12 +341,13 @@ class CorrBlock:
         """
         Compute correlation only between overlapping frames.
         Memory: O(S * window_size) instead of O(S^2)
+        Returns correlation data only for overlapping frame pairs.
         """
         B, S, N, C = fmap1.shape
         *_, H, W = fmaps.shape
         
-        # Initialize sparse correlation tensor
-        corrs = torch.zeros(B, S, N, H, W, device=fmap1.device, dtype=fmap1.dtype)
+        # Store sparse correlation results as list of (frame_idx, correlation_tensor) pairs
+        sparse_corrs = {}
         
         # Compute correlations only within overlap windows
         for s in range(S):
@@ -365,7 +366,19 @@ class CorrBlock:
             frame_corrs = torch.matmul(query_feats, search_feats)  # (B, 1, N, window_size*H*W)
             frame_corrs = frame_corrs.view(B, 1, N, end_frame-start_frame, H, W)
             
-            # Place results in sparse tensor
-            corrs[:, s:s+1, :, :, :] = frame_corrs[:, :, :, s-start_frame:s-start_frame+1, :, :].squeeze(3)
+            # Store only correlations for frames within window
+            for local_idx, global_frame in enumerate(range(start_frame, end_frame)):
+                if global_frame not in sparse_corrs:
+                    sparse_corrs[global_frame] = torch.zeros(B, S, N, H, W, device=fmap1.device, dtype=fmap1.dtype)
+                
+                # Only store correlation between frame s and global_frame
+                if global_frame == s:  # Self-correlation (main diagonal)
+                    sparse_corrs[global_frame][:, s:s+1, :, :, :] = frame_corrs[:, :, :, local_idx:local_idx+1, :, :].squeeze(3)
+        
+        # Combine sparse results back into dense tensor (for compatibility)
+        # TODO: Modify downstream code to work with sparse representation
+        corrs = torch.zeros(B, S, N, H, W, device=fmap1.device, dtype=fmap1.dtype)
+        for frame_idx, frame_corrs in sparse_corrs.items():
+            corrs += frame_corrs
             
         return corrs
