@@ -187,7 +187,7 @@ def demo_fn(args):
 
     extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
 
-    points_3d = unproject_depth_map_to_point_map(depth_map, extrinsics_w2c[:,:3,:], intrinsic)
+    points_3d = unproject_depth_map_to_point_map(depth_map, extrinsic, intrinsic)
 
     if args.use_ba:
         image_size = np.array(images.shape[-2:])
@@ -238,7 +238,7 @@ def demo_fn(args):
         # TODO: radial distortion, iterative BA, masks
         reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
             points_3d,
-            extrinsics_w2c[:,:3,:],  # Use W2C format for consistency
+            extrinsic,  # Use W2C format for consistency
             intrinsic,
             pred_tracks,
             image_size,
@@ -288,7 +288,7 @@ def demo_fn(args):
             points_3d,
             points_xyf,
             points_rgb,
-            extrinsics_w2c[:,:3,:],  # Use W2C format for consistency
+            extrinsic,  # Use W2C format for consistency
             intrinsic,
             image_size,
             shared_camera=shared_camera,

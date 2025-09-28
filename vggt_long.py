@@ -501,9 +501,15 @@ class VGGT_Long:
         print("Saving all camera poses to txt file...")
         
         all_poses = [None] * len(self.img_list)
+        all_poses_original = [None] * len(self.img_list)
+
         all_intrinsics = [None] * len(self.img_list)
         all_depths = [None] * len(self.img_list)
         all_depth_confs = [None] * len(self.img_list)
+
+        all_poses_original = [None]* len(self.img_list)
+
+
         
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
         _, first_chunk_intrinsics = self.all_camera_intrinsics[0]
@@ -514,6 +520,12 @@ class VGGT_Long:
 
 
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
+
+            # Save original poses -added
+            all_poses_original[idx] = first_chunk_extrinsics[i]
+
+        
+
             w2c = np.eye(4)
             w2c[:3, :] = first_chunk_extrinsics[i] 
             c2w = np.linalg.inv(w2c)
@@ -540,6 +552,10 @@ class VGGT_Long:
             S[:3, 3] = t
 
             for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
+
+                # Save original poses - added
+                all_poses_original[idx] = chunk_extrinsics[i]
+
                 w2c = np.eye(4)
                 w2c[:3, :] = chunk_extrinsics[i]
                 c2w = np.linalg.inv(w2c)
@@ -607,7 +623,7 @@ class VGGT_Long:
         print(f"Camera intrinsics saved to {intrinsics_path}")
 
         extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
-        np.save(extrinsic_path, all_poses)
+        np.save(extrinsic_path, all_poses_original)
         print(f"Camera extrinsics saved to {extrinsic_path}")
 
     def close(self):
