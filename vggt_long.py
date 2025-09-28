@@ -547,6 +547,8 @@ class VGGT_Long:
 
             s, R, t = self.sim3_list[chunk_idx-1]   # When call self.save_camera_poses(), all the sim3 are aligned to the first chunk.
             
+            print(f"Applying SIM(3) to chunk {chunk_idx}: Scale {s}, Rotation:\n{R}, Translation: {t}")
+
             S = np.eye(4)
             S[:3, :3] = s * R
             S[:3, 3] = t
