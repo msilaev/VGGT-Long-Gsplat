@@ -535,6 +535,9 @@ class VGGT_Long:
             all_depths[idx] = first_chunk_depths[i]
             all_depth_confs[idx] = first_chunk_depths_confs[i]
 
+        
+        
+        print("number of chunks:", len(self.all_camera_poses))
         for chunk_idx in range(1, len(self.all_camera_poses)):
             
             chunk_range, chunk_extrinsics = self.all_camera_poses[chunk_idx]
