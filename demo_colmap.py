@@ -23,6 +23,7 @@ from pathlib import Path
 import trimesh
 import pycolmap
 
+from alternative_tracking.colmap_tracking import predict_tracks_with_colmap
 
 from vggt.models.vggt import VGGT
 from vggt.utils.load_fn import load_and_preprocess_images_square
@@ -60,6 +61,10 @@ def parse_args():
     )
     parser.add_argument(
         "--conf_thres_value", type=float, default=5.0, help="Confidence threshold value for depth filtering (wo BA)"
+    )
+
+    parser.add_argument(
+        "--predict_tracks_type", type=str, default="vggsfm", help="Type of track prediction method: colmap or vggsfm"
     )
     return parser.parse_args()
 
@@ -198,11 +203,10 @@ def demo_fn(args):
             points_rgb = (points_rgb.cpu().numpy() * 255).astype(np.uint8)
             points_rgb = points_rgb.transpose(0, 2, 3, 1)  # (S, H, W, 3)
             
-            try:
+            if args.predict_tracks_type == 'colmap':
+                        
                 # Try COLMAP tracking first (most memory efficient for long sequences)
-                print("Using COLMAP tracking (production quality, memory efficient)")
-                
-                from alternative_tracking.colmap_tracking import predict_tracks_with_colmap
+                print("Using COLMAP tracking (production quality, memory efficient)")                               
                 
                 pred_tracks, pred_vis_scores, pred_confs = predict_tracks_with_colmap(
                     images,
@@ -210,8 +214,7 @@ def demo_fn(args):
                     max_query_pts=args.max_query_pts
                 )
                 
-            except ImportError:
-                print("COLMAP tracking not available, falling back to VGGSfM (may cause OOM)")
+            elif args.predict_tracks_type == 'vggsfm':
                 pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
                     images,
                     conf=depth_conf,
@@ -222,6 +225,9 @@ def demo_fn(args):
                     keypoint_extractor="aliked+sp",
                     fine_tracking=args.fine_tracking,
                 )
+
+            else:
+                raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
 
             torch.cuda.empty_cache()
 
