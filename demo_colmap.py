@@ -124,12 +124,12 @@ def demo_fn(args):
         print(f"GPU memory free: {torch.cuda.memory_reserved(0) / 1024**3:.1f} GB")
 
     # # Run VGGT for camera and depth estimation
-    #model = VGGT()
+    model = VGGT()
     #_URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
-    #model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
-    #model.eval()
-    #model = model.to(device)
-    #print(f"Model loaded")
+    model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
+    model.eval()
+    model = model.to(device)
+    print(f"Model loaded")
     ######################
 
     # # Get image paths and preprocess them
@@ -158,7 +158,7 @@ def demo_fn(args):
 
     # # Run VGGT to estimate camera and depth
     # # Run with 518x518 images
-    #extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
+    extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
 
     image_dir = args.scene_dir
     path = image_dir.split("/")
@@ -183,7 +183,7 @@ def demo_fn(args):
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    extrinsic = np.load(extrinsic_path)
+    #extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
     for i in range(len(extrinsic)):
