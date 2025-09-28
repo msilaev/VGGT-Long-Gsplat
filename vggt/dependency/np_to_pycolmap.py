@@ -66,6 +66,15 @@ def batch_np_matrix_to_pycolmap(
 
     assert masks is not None
 
+    print("Debug info:")
+    print(f"  Tracks shape: {tracks.shape}")
+    print(f"  Points3D shape: {points3d.shape}")
+    print(f"  Masks shape: {masks.shape}")
+    print(f"  Total valid masks: {masks.sum()}")
+    print(f"  Masks per frame: {masks.sum(1)}")
+    if max_reproj_error is not None:
+        print(f"  Reprojection errors min/max: {projected_diff.min():.3f}/{projected_diff.max():.3f}")
+        print(f"  Points behind camera: {(projected_points_cam[:, -1] <= 0).sum()}")
     print("Inliers per frame:", masks.sum(1).min(), "Min required:", min_inlier_per_frame)
 
     if masks.sum(1).min() < min_inlier_per_frame:
