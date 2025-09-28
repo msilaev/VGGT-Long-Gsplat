@@ -172,10 +172,10 @@ def demo_fn(args):
     #    )
 
     depth_path = os.path.join(data_dir, 'depth_maps.npy')
-    depth_map = np.load(depth_path)
+    #depth_map = np.load(depth_path)
     print(f"Depth maps loaded from {depth_path}")
     depth_conf_path = os.path.join(data_dir, 'depth_confs.npy')
-    depth_conf = np.load(depth_conf_path)
+    #depth_conf = np.load(depth_conf_path)
     print(f"Depth confidence maps loaded from {depth_conf_path}")
 
     intrinsics_path = os.path.join(data_dir, 'intrinsic.npy')
