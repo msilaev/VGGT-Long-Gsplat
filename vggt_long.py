@@ -509,6 +509,9 @@ class VGGT_Long:
 
         all_poses_original = [None]* len(self.img_list)
 
+        all_poses_w2c=[None]* len(self.img_list)  # Save as 3x4 W2C format
+        
+
 
         
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
@@ -628,14 +631,14 @@ class VGGT_Long:
         print(f"Camera intrinsics saved to {intrinsics_path}")
 
         # Convert aligned C2W poses back to W2C format for demo_colmap.py
-        all_poses_w2c = []
+        #all_poses_w2c = []
         for pose_c2w in all_poses:
             w2c = np.linalg.inv(pose_c2w)[:3, :]  # Convert to W2C and take the first 3 rows
             
-            all_poses_w2c.append(w2c)  # Save as 3x4 W2C format
+          #  all_poses_w2c.append(w2c)  # Save as 3x4 W2C format
         
         extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
-        np.save(extrinsic_path, np.array(all_poses_w2c))
+        np.save(extrinsic_path, all_poses_original)
         print(f"Camera extrinsics (W2C aligned) saved to {extrinsic_path}")
         
         # Also save C2W format for backward compatibility
