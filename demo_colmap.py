@@ -186,6 +186,10 @@ def demo_fn(args):
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
+    for i in range(len(extrinsic)):
+        print(f"Original pose for image {i}:\n", extrinsic[i])
+        #extrinsic[i] = extrinsic[i][:3, :]  # Convert to 3x4 W2C format if necessary
+
     #extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
 
     points_3d = unproject_depth_map_to_point_map(depth_map, extrinsic, intrinsic)

@@ -527,6 +527,7 @@ class VGGT_Long:
             # Save original poses -added
             all_poses_original[idx] = first_chunk_extrinsics[i]
 
+            print(f"First chunk original pose for image {idx}:\n", first_chunk_extrinsics[i])
         
 
             w2c = np.eye(4)
