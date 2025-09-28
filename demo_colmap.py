@@ -185,7 +185,7 @@ def demo_fn(args):
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
-    extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
+    #extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
 
     points_3d = unproject_depth_map_to_point_map(depth_map, extrinsic, intrinsic)
 
