@@ -183,7 +183,7 @@ def demo_fn(args):
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    extrinsic = np.load(extrinsic_path)
+    #extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
     for i in range(len(extrinsic)):
