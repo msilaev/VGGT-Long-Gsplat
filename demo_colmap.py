@@ -238,7 +238,7 @@ def demo_fn(args):
         # TODO: radial distortion, iterative BA, masks
         reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
             points_3d,
-            extrinsic,
+            extrinsics_w2c[:,:3,:],  # Use W2C format for consistency
             intrinsic,
             pred_tracks,
             image_size,
@@ -288,7 +288,7 @@ def demo_fn(args):
             points_3d,
             points_xyf,
             points_rgb,
-            extrinsic,
+            extrinsics_w2c[:,:3,:],  # Use W2C format for consistency
             intrinsic,
             image_size,
             shared_camera=shared_camera,
