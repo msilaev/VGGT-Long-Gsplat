@@ -172,18 +172,18 @@ def demo_fn(args):
     #    )
 
     depth_path = os.path.join(data_dir, 'depth_maps.npy')
-    #depth_map = np.load(depth_path)
+    depth_map = np.load(depth_path)
     print(f"Depth maps loaded from {depth_path}")
     depth_conf_path = os.path.join(data_dir, 'depth_confs.npy')
-    #depth_conf = np.load(depth_conf_path)
+    depth_conf = np.load(depth_conf_path)
     print(f"Depth confidence maps loaded from {depth_conf_path}")
 
     intrinsics_path = os.path.join(data_dir, 'intrinsic.npy')
-    #intrinsic = np.load(intrinsics_path)
+    intrinsic = np.load(intrinsics_path)
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    #extrinsic = np.load(extrinsic_path)
+    extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
     #extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
