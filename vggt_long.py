@@ -64,8 +64,8 @@ def run_VGGT(model, images, dtype, resolution=518):
     intrinsic = intrinsic.squeeze(0).cpu().numpy()
     depth_map = depth_map.squeeze(0).cpu().numpy()
     depth_conf = depth_conf.squeeze(0).cpu().numpy()
-    return extrinsic, intrinsic, depth_map, depth_conf
 
+    return extrinsic, intrinsic, depth_map, depth_conf
 
 def remove_duplicates(data_list):
     """
@@ -286,6 +286,8 @@ class VGGT_Long:
             print(f"shape of depth confidence maps: {depth_confs.shape}")
             print(f"shape of extrinsics: {extrinsics.shape}")
             print(f"shape of intrinsics: {intrinsics.shape}")
+
+            print(f"Test extrinsics[0]:\n", extrinsics[0] )
 
 
             self.all_camera_poses.append((chunk_range, extrinsics))
@@ -541,33 +543,24 @@ class VGGT_Long:
         
         all_poses = [None] * len(self.img_list)
         all_poses_original = [None] * len(self.img_list)
-
         all_intrinsics = [None] * len(self.img_list)
         all_depths = [None] * len(self.img_list)
         all_depth_confs = [None] * len(self.img_list)
-
         all_poses_original = [None]* len(self.img_list)
-
         all_poses_w2c=[None]* len(self.img_list)  # Save as 3x4 W2C format
-        
-
-
-        
+                
         first_chunk_range, first_chunk_extrinsics = self.all_camera_poses[0]
         _, first_chunk_intrinsics = self.all_camera_intrinsics[0]
 
-
         _, first_chunk_depths = self.all_camera_depths[0]
         _, first_chunk_depths_confs = self.all_camera_depths_confs[0]
-
 
         for i, idx in enumerate(range(first_chunk_range[0], first_chunk_range[1])):
 
             # Save original poses -added
             all_poses_original[idx] = first_chunk_extrinsics[i]
 
-            print(f"First chunk original pose for image {idx}:\n", first_chunk_extrinsics[i])
-        
+            #print(f"First chunk original pose for image {idx}:\n", first_chunk_extrinsics[i])
 
             w2c = np.eye(4)
             w2c[:3, :] = first_chunk_extrinsics[i] 
@@ -576,9 +569,7 @@ class VGGT_Long:
             all_intrinsics[idx] = first_chunk_intrinsics[i]
             # added for depth
             all_depths[idx] = first_chunk_depths[i]
-            all_depth_confs[idx] = first_chunk_depths_confs[i]
-
-        
+            all_depth_confs[idx] = first_chunk_depths_confs[i]        
         
         print("number of chunks:", len(self.all_camera_poses))
         for chunk_idx in range(1, len(self.all_camera_poses)):
@@ -616,6 +607,8 @@ class VGGT_Long:
                 # New addition for depth
                 all_depths[idx] = chunk_depths[i]
                 all_depth_confs[idx] = chunk_depths_confs[i]
+        
+        print(f"Example aligned pose for image 0:\n", all_poses_original[0])
         
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:

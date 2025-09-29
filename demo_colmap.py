@@ -160,6 +160,8 @@ def demo_fn(args):
     # # Run with 518x518 images
     extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
 
+    print(f"Example extrinsics[0]:\n", extrinsic[0])
+
     image_dir = args.scene_dir
     path = image_dir.split("/")
     exp_dir = './exps'
@@ -186,8 +188,8 @@ def demo_fn(args):
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
-    for i in range(len(extrinsic)):
-        print(f"Original pose for image {i}:\n", extrinsic[i])
+    #for i in range(len(extrinsic)):
+    #    print(f"Original pose for image {i}:\n", extrinsic[i])
         #extrinsic[i] = extrinsic[i][:3, :]  # Convert to 3x4 W2C format if necessary
 
     #extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
