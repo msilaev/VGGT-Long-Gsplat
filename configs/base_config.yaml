@@ -5,9 +5,9 @@ Weights:
   DNIO: './weights/dinov2_vitb14_pretrain.pth'
 
 Model:
-  chunk_size: 45
-  overlap: 30
-  loop_chunk_size: 20 # imgs of loop chunk = 2 * loop_chunk_size
+  chunk_size: 44
+  overlap: 22
+  loop_chunk_size: 11 # imgs of loop chunk = 2 * loop_chunk_size
   loop_enable: True
   useDBoW: False
   delete_temp_files: True

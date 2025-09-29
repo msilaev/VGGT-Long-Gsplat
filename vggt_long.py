@@ -332,6 +332,42 @@ class VGGT_Long:
                 start_idx = i * step
                 end_idx = min(start_idx + self.chunk_size, len(self.img_list))
                 self.chunk_indices.append((start_idx, end_idx))
+            
+            # SMART CHUNKING: Merge small last chunk with previous chunk
+            if len(self.chunk_indices) > 1:
+                last_chunk_size = self.chunk_indices[-1][1] - self.chunk_indices[-1][0]
+                min_chunk_size = max(self.overlap + 5, self.chunk_size * 0.3)  # At least overlap + buffer
+                
+                if last_chunk_size < min_chunk_size:
+                    print(f"WARNING: Last chunk too small ({last_chunk_size}), merging with previous chunk...")
+                    
+                    # Remove last chunk and extend previous chunk
+                    last_start, last_end = self.chunk_indices.pop()
+                    prev_start, _ = self.chunk_indices.pop()
+                    merged_chunk = (prev_start, last_end)
+                    self.chunk_indices.append(merged_chunk)
+                    
+                    merged_size = merged_chunk[1] - merged_chunk[0]
+                    print(f"Merged chunk size: {merged_size} (was {last_chunk_size} + previous)")
+        
+        # DEBUG: Check for problematic last chunk
+        print(f"\n=== CHUNK SIZE ANALYSIS ===")
+        print(f"Total images: {len(self.img_list)}")
+        print(f"Chunk size: {self.chunk_size}, Overlap: {self.overlap}")
+        print(f"Number of chunks: {len(self.chunk_indices)}")
+        
+        for i, (start, end) in enumerate(self.chunk_indices):
+            chunk_size = end - start
+            print(f"Chunk {i}: [{start}, {end}) = {chunk_size} images")
+            
+            if chunk_size < self.overlap and i > 0:
+                print(f"  WARNING: Chunk {i} has {chunk_size} images < overlap {self.overlap}!")
+                print(f"  This will cause alignment issues with chunk {i-1}")
+            
+            if chunk_size < self.chunk_size * 0.5 and i == len(self.chunk_indices) - 1:
+                print(f"  WARNING: Last chunk {i} is very small ({chunk_size} images)")
+                print(f"  Consider merging with previous chunk or adjusting parameters")
+        print(f"=== END CHUNK ANALYSIS ===\n")
         
         if self.loop_enable:
             print('Loop SIM(3) estimating...')
@@ -366,10 +402,23 @@ class VGGT_Long:
             chunk_data1 = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
             chunk_data2 = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx+1}.npy"), allow_pickle=True).item()
             
-            point_map1 = chunk_data1['world_points'][-self.overlap:]
-            point_map2 = chunk_data2['world_points'][:self.overlap]
-            conf1 = chunk_data1['world_points_conf'][-self.overlap:]
-            conf2 = chunk_data2['world_points_conf'][:self.overlap]
+            # SAFE OVERLAP: Handle variable chunk sizes
+            chunk1_size = chunk_data1['world_points'].shape[0]
+            chunk2_size = chunk_data2['world_points'].shape[0]
+            
+            # Use actual overlap size, capped by chunk sizes
+            actual_overlap = min(self.overlap, chunk1_size, chunk2_size)
+            
+            print(f"  Chunk {chunk_idx} size: {chunk1_size}, Chunk {chunk_idx+1} size: {chunk2_size}")
+            print(f"  Using overlap: {actual_overlap} (requested: {self.overlap})")
+            
+            if actual_overlap < 3:
+                print(f"  WARNING: Very small overlap ({actual_overlap}) may cause poor alignment!")
+            
+            point_map1 = chunk_data1['world_points'][-actual_overlap:]
+            point_map2 = chunk_data2['world_points'][:actual_overlap]
+            conf1 = chunk_data1['world_points_conf'][-actual_overlap:]
+            conf2 = chunk_data2['world_points_conf'][:actual_overlap]
 
             conf_threshold = min(np.median(conf1), np.median(conf2)) * 0.1
             s, R, t = weighted_align_point_maps(point_map1, 
