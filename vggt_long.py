@@ -688,21 +688,15 @@ class VGGT_Long:
         np.save(intrinsics_path, all_intrinsics)
         print(f"Camera intrinsics saved to {intrinsics_path}")
 
-        # Convert aligned C2W poses back to W2C format for demo_colmap.py
-        all_poses_w2c = []
-        for pose_c2w in all_poses:
-            w2c = np.linalg.inv(pose_c2w)[:3, :]  # Convert to W2C and take the first 3 rows
-
-            all_poses_w2c.append(w2c)  # Save as 3x4 W2C format
-
+        # Save original W2C poses for demo_colmap.py (before SIM(3) alignment)
+        # COLMAP needs the original poses from each chunk, not the aligned ones
         extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
-        #np.save(extrinsic_path, all_poses_original)
-        np.save(extrinsic_path, all_poses_w2c)
+        np.save(extrinsic_path, all_poses_original)
 
-        print("Example W2C aligned pose for image 1:\n", all_poses_w2c[1])
-        print("Example original pose for image 1:\n", all_poses_original[1])
+        print("Example original W2C pose for image 1:\n", all_poses_original[1])
+        print("Example aligned C2W pose for image 1:\n", all_poses[1])
 
-        print(f"Camera extrinsics (W2C aligned) saved to {extrinsic_path}")
+        print(f"Camera extrinsics (original W2C) saved to {extrinsic_path}")
         
         # Also save C2W format for backward compatibility
         c2w_path = os.path.join(self.output_dir, 'extrinsic_c2w.npy')
