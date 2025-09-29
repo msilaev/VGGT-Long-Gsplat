@@ -5,8 +5,8 @@ Weights:
   DNIO: './weights/dinov2_vitb14_pretrain.pth'
 
 Model:
-  chunk_size: 40
-  overlap: 20
+  chunk_size: 50
+  overlap: 10  # 20% overlap - good balance of alignment quality vs. overwrite area
   loop_chunk_size: 10 # imgs of loop chunk = 2 * loop_chunk_size
   loop_enable: True
   useDBoW: False
@@ -20,7 +20,7 @@ Model:
 
   Pointcloud_Save:
     sample_ratio: 0.015
-    conf_threshold_coef: 0.75 # conf_threshold = np.mean(confs) * conf_threshold_coef
+    conf_threshold_coef: 0.5  # Lower threshold to use more points for alignment (was 0.75)
 
 Loop:
   DBoW:
@@ -39,5 +39,5 @@ Loop:
   SIM3_Optimizer:
     lang_version: 'cpp' 
     # choose between 'cpp' or 'python'. will auto set 'python' if c++ version has not installed
-    max_iterations: 30
-    lambda_init: 1e-6
+    max_iterations: 50  # Increased from 30 for better alignment
+    lambda_init: 1e-7  # More aggressive optimization
