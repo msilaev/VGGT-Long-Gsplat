@@ -232,7 +232,7 @@ class VGGT_Long:
         images = images.to(self.device)
         #original_coords = original_coords.to(self.device)
 
-        extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(self.model, images, self.dtype, vggt_fixed_resolution)
+        extrinsic_1, intrinsic_1, depth_map_1, depth_conf_1 = run_VGGT(self.model, images, self.dtype, vggt_fixed_resolution)
 
         images = F.interpolate(images, size=(vggt_fixed_resolution, vggt_fixed_resolution), mode="bilinear", align_corners=False)
 
@@ -249,9 +249,11 @@ class VGGT_Long:
         torch.cuda.empty_cache()
 
         print("Converting pose encoding to extrinsic and intrinsic matrices...")
-        # extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
-        predictions["extrinsic"] = extrinsic
-        predictions["intrinsic"] = intrinsic
+        extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
+        predictions["extrinsic"] = extrinsic_1
+        predictions["intrinsic"] = intrinsic_1
+        predictions["depth"] = depth_map_1
+        predictions["depth_conf"] = depth_conf_1
         print("Processing model outputs...")
         for key in predictions.keys():
             if isinstance(predictions[key], torch.Tensor):
@@ -281,6 +283,9 @@ class VGGT_Long:
             depth_maps = predictions['depth']
 
             print(f"shape of depth maps: {depth_maps.shape}")
+            print(f"shape of depth confidence maps: {depth_confs.shape}")
+            print(f"shape of extrinsics: {extrinsics.shape}")
+            print(f"shape of intrinsics: {intrinsics.shape}")
             depth_confs = predictions['depth_conf']
             self.all_camera_depths.append((chunk_range, depth_maps))
             self.all_camera_depths_confs.append((chunk_range, depth_confs))
