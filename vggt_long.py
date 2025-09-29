@@ -142,11 +142,11 @@ class VGGT_Long:
         print('Loading model...')
 
         self.model = VGGT()
-        # _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
-        # model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
-        _URL = self.config['Weights']['VGGT']
-        state_dict = torch.load(_URL, map_location='cuda')
-        self.model.load_state_dict(state_dict, strict=False)
+        _URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
+        self.model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
+        #_URL = self.config['Weights']['VGGT']
+        #state_dict = torch.load(_URL, map_location='cuda')
+        #self.model.load_state_dict(state_dict, strict=False)
 
         self.model.eval()
         self.model = self.model.to(self.device)
