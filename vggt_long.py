@@ -610,6 +610,8 @@ class VGGT_Long:
 
             print(S)
 
+
+
             for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
 
                 # Save original poses - added
@@ -627,6 +629,54 @@ class VGGT_Long:
                 # New addition for depth
                 all_depths[idx] = chunk_depths[i]
                 all_depth_confs[idx] = chunk_depths_confs[i]
+               
+        
+        # Test alignment by comparing poses for overlap images
+        for chunk_idx in range(1, len(self.all_camera_poses)):
+                        
+            if chunk_idx == 1:  # Only test for first chunk pair to avoid spam
+                prev_chunk_range = self.chunk_indices[chunk_idx-1]
+                curr_chunk_range = chunk_range
+                
+                # Find overlap region
+                overlap_start = max(prev_chunk_range[0], curr_chunk_range[0])
+                overlap_end = min(prev_chunk_range[1], curr_chunk_range[1])
+                
+                print(f"\n=== ALIGNMENT TEST for chunks {chunk_idx-1} and {chunk_idx} ===")
+                print(f"Previous chunk range: {prev_chunk_range}")
+                print(f"Current chunk range: {curr_chunk_range}")
+                print(f"Overlap range: [{overlap_start}, {overlap_end})")
+                
+                if overlap_start < overlap_end:
+                    print("Testing pose alignment for overlap images:")
+                    
+                    # Get poses from previous chunk (already in all_poses)
+                    for test_idx in range(overlap_start, min(overlap_start + 3, overlap_end)):
+                        if all_poses[test_idx] is not None:
+                            prev_pose = all_poses[test_idx]
+                            
+                            # Get corresponding pose from current chunk
+                            curr_chunk_local_idx = test_idx - curr_chunk_range[0]
+                            if 0 <= curr_chunk_local_idx < len(chunk_extrinsics):
+                                w2c_curr = np.eye(4)
+                                w2c_curr[:3, :] = chunk_extrinsics[curr_chunk_local_idx]
+                                c2w_curr = np.linalg.inv(w2c_curr)
+                                transformed_curr = S @ c2w_curr
+                                
+                                # Compare positions
+                                pos_diff = np.linalg.norm(prev_pose[:3, 3] - transformed_curr[:3, 3])
+                                
+                                # Compare rotation (Frobenius norm of rotation difference)
+                                rot_diff = np.linalg.norm(prev_pose[:3, :3] - transformed_curr[:3, :3], 'fro')
+                                
+                                print(f"  Image {test_idx}: position diff = {pos_diff:.6f}, rotation diff = {rot_diff:.6f}")
+                                
+                                if pos_diff > 0.1:
+                                    print(f"  WARNING: Large position difference for image {test_idx}!")
+                                if rot_diff > 0.1:
+                                    print(f"  WARNING: Large rotation difference for image {test_idx}!")
+                print("=== END ALIGNMENT TEST ===\n")
+        
         
         print(f"Example aligned pose for image 1:\n", all_poses_original[1])
         print(f"Example aligned pose for image 2:\n", all_poses_original[2])
