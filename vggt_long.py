@@ -39,6 +39,34 @@ import sys
 
 from loop_utils.config_utils import load_config
 
+def run_VGGT(model, images, dtype, resolution=518):
+    # images: [B, 3, H, W]
+
+    assert len(images.shape) == 4
+    assert images.shape[1] == 3
+
+    # hard-coded to use 518 for VGGT
+    images = F.interpolate(images, size=(resolution, resolution), mode="bilinear", align_corners=False)
+
+    with torch.no_grad():
+        with torch.cuda.amp.autocast(dtype=dtype):
+            images = images[None]  # add batch dimension
+            aggregated_tokens_list, ps_idx = model.aggregator(images)
+
+        # Predict Cameras
+        pose_enc = model.camera_head(aggregated_tokens_list)[-1]
+        # Extrinsic and intrinsic matrices, following OpenCV convention (camera from world)
+        extrinsic, intrinsic = pose_encoding_to_extri_intri(pose_enc, images.shape[-2:])
+        # Predict Depth Maps
+        depth_map, depth_conf = model.depth_head(aggregated_tokens_list, images, ps_idx)
+
+    extrinsic = extrinsic.squeeze(0).cpu().numpy()
+    intrinsic = intrinsic.squeeze(0).cpu().numpy()
+    depth_map = depth_map.squeeze(0).cpu().numpy()
+    depth_conf = depth_conf.squeeze(0).cpu().numpy()
+    return extrinsic, intrinsic, depth_map, depth_conf
+
+
 def remove_duplicates(data_list):
     """
         data_list: [(67, (3386, 3406), 48, (2435, 2455)), ...]
@@ -204,6 +232,8 @@ class VGGT_Long:
         images = images.to(self.device)
         #original_coords = original_coords.to(self.device)
 
+        extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(self.model, images, self.dtype, vggt_fixed_resolution)
+
         images = F.interpolate(images, size=(vggt_fixed_resolution, vggt_fixed_resolution), mode="bilinear", align_corners=False)
 
         print(f"Loaded {len(images)} images")
@@ -219,7 +249,7 @@ class VGGT_Long:
         torch.cuda.empty_cache()
 
         print("Converting pose encoding to extrinsic and intrinsic matrices...")
-        extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
+        # extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
         predictions["extrinsic"] = extrinsic
         predictions["intrinsic"] = intrinsic
         print("Processing model outputs...")
