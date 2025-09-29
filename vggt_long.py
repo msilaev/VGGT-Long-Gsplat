@@ -276,17 +276,21 @@ class VGGT_Long:
             intrinsics = predictions['intrinsic']
             
             chunk_range = self.chunk_indices[chunk_idx]
-            self.all_camera_poses.append((chunk_range, extrinsics))
-            self.all_camera_intrinsics.append((chunk_range, intrinsics))
 
             ##### New addition
             depth_maps = predictions['depth']
+
+            depth_confs = predictions['depth_conf']
 
             print(f"shape of depth maps: {depth_maps.shape}")
             print(f"shape of depth confidence maps: {depth_confs.shape}")
             print(f"shape of extrinsics: {extrinsics.shape}")
             print(f"shape of intrinsics: {intrinsics.shape}")
-            depth_confs = predictions['depth_conf']
+
+
+            self.all_camera_poses.append((chunk_range, extrinsics))
+            self.all_camera_intrinsics.append((chunk_range, intrinsics))
+
             self.all_camera_depths.append((chunk_range, depth_maps))
             self.all_camera_depths_confs.append((chunk_range, depth_confs))
 
