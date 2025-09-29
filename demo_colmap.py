@@ -190,7 +190,7 @@ def demo_fn(args):
     print(f"Depth confidence maps loaded from {depth_conf_path}")
 
     intrinsics_path = os.path.join(data_dir, 'intrinsic.npy')
-    #intrinsic = np.load(intrinsics_path)
+    intrinsic = np.load(intrinsics_path)
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')

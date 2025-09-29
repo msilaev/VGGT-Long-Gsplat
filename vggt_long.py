@@ -260,6 +260,9 @@ class VGGT_Long:
         print(f"Example extrinsics_1[1]:\n", extrinsic_1[1])
         print(f"Example extrinsics_1[2]:\n", extrinsic_1[2])
 
+        print(f"Example extrinsics[1]:\n", extrinsic[1])
+        print(f"Example extrinsics[2]:\n", extrinsic[2])
+
         print("Processing model outputs...")
         for key in predictions.keys():
             if isinstance(predictions[key], torch.Tensor):
