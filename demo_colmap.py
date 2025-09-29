@@ -135,7 +135,7 @@ def demo_fn(args):
     # # Get image paths and preprocess them
     #image_dir = os.path.join(args.scene_dir, "images")
     image_dir = args.scene_dir
-    image_path_list = glob.glob(os.path.join(image_dir, "*"))
+    image_path_list = sorted(glob.glob(os.path.join(image_dir, "*.jpg"))) + sorted(glob.glob(os.path.join(image_dir, "*.png")))
     if len(image_path_list) == 0:
         raise ValueError(f"No images found in {image_dir}")
     base_image_path_list = [os.path.basename(path) for path in image_path_list]
@@ -188,7 +188,7 @@ def demo_fn(args):
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    extrinsic = np.load(extrinsic_path)
+    #extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
     #for i in range(len(extrinsic)):
