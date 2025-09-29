@@ -145,7 +145,7 @@ def demo_fn(args):
     vggt_fixed_resolution = 518
     img_load_resolution = 1024
 
-    print(image_path_list)
+    #print(image_path_list)
 
     images, original_coords = load_and_preprocess_images_square(image_path_list, img_load_resolution)
     images = images.to(device)
@@ -193,7 +193,7 @@ def demo_fn(args):
     intrinsic = np.load(intrinsics_path)
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
-    extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
+    extrinsic_path = os.path.join(data_dir, 'extrinsic_c2w.npy')
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 

@@ -228,13 +228,13 @@ class VGGT_Long:
         vggt_fixed_resolution = 518
         img_load_resolution = 1024
 
-        print(chunk_image_paths)
+        #print(chunk_image_paths)
 
         images, _ = load_and_preprocess_images_square(chunk_image_paths, img_load_resolution)
         images = images.to(self.device)
         #original_coords = original_coords.to(self.device)
 
-        extrinsic_1, intrinsic_1, depth_map_1, depth_conf_1 = run_VGGT(self.model, images, self.dtype, vggt_fixed_resolution)
+        #extrinsic_1, intrinsic_1, depth_map_1, depth_conf_1 = run_VGGT(self.model, images, self.dtype, vggt_fixed_resolution)
 
         images = F.interpolate(images, size=(vggt_fixed_resolution, vggt_fixed_resolution), mode="bilinear", align_corners=False)
 
