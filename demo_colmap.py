@@ -49,11 +49,11 @@ def parse_args():
     parser.add_argument("--use_ba", action="store_true", default=False, help="Use BA for reconstruction")
     ######### BA parameters #########
     parser.add_argument(
-        "--max_reproj_error", type=float, default=8.0, help="Maximum reprojection error for reconstruction"
+        "--max_reproj_error", type=float, default=16.0, help="Maximum reprojection error for reconstruction"
     )
-    parser.add_argument("--shared_camera", action="store_true", default=False, help="Use shared camera for all images")
+    parser.add_argument("--shared_camera", action="store_true", default=True, help="Use shared camera for all images")
     parser.add_argument("--camera_type", type=str, default="SIMPLE_PINHOLE", help="Camera type for reconstruction")
-    parser.add_argument("--vis_thresh", type=float, default=0.2, help="Visibility threshold for tracks")
+    parser.add_argument("--vis_thresh", type=float, default=0.1, help="Visibility threshold for tracks")
     parser.add_argument("--query_frame_num", type=int, default=8, help="Number of frames to query")
     parser.add_argument("--max_query_pts", type=int, default=4096, help="Maximum number of query points")
     parser.add_argument(
@@ -158,19 +158,6 @@ def demo_fn(args):
         cached = torch.cuda.memory_reserved(0) / 1024**3
         print(f"GPU memory after loading images - Allocated: {allocated:.1f} GB, Cached: {cached:.1f} GB")
 
-    # # Run VGGT to estimate camera and depth
-    # # Run with 518x518 images
-    #extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
-
-    #print(f"Example extrinsics[1]:\n", extrinsic[1])
-    #print(f"Example extrinsics[2]:\n", extrinsic[2])
-
-    #print(f"Example intrinsic[1]:\n", intrinsic[1])
-    #print(f"Example intrinsic[2]:\n", intrinsic[2])
-
-    #print(f"Example depth_map[1] shape:\n", depth_map[1][1,1])
-    #print(f"Example depth_map[2] shape:\n", depth_map[2][1,1])
-
     image_dir = args.scene_dir
     path = image_dir.split("/")
     exp_dir = './exps'
@@ -178,9 +165,6 @@ def demo_fn(args):
         exp_dir, path[-3] + "_" + path[-2] + "_" + path[-1]
     )
 
-    #save_dir = os.path.join(
-    #        exp_dir, image_dir.replace("/", "_"), current_datetime
-    #    )
 
     depth_path = os.path.join(data_dir, 'depth_maps.npy')
     depth_map = np.load(depth_path)
@@ -197,11 +181,6 @@ def demo_fn(args):
     extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
-    #for i in range(len(extrinsic)):
-    #    print(f"Original pose for image {i}:\n", extrinsic[i])
-        #extrinsic[i] = extrinsic[i][:3, :]  # Convert to 3x4 W2C format if necessary
-
-    #extrinsics_w2c = np.linalg.inv(extrinsic)  # Convert C2W to W2C
 
     points_3d = unproject_depth_map_to_point_map(depth_map, extrinsic, intrinsic)
 
@@ -252,21 +231,46 @@ def demo_fn(args):
         track_mask = pred_vis_scores > args.vis_thresh
 
         # TODO: radial distortion, iterative BA, masks
-        reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
-            points_3d,
-            extrinsic,  # Use W2C format for consistency
-            intrinsic,
-            pred_tracks,
-            image_size,
-            masks=track_mask,
-            max_reproj_error=args.max_reproj_error,
-            shared_camera=shared_camera,
-            camera_type=args.camera_type,
-            points_rgb=points_rgb,
-        )
+        # ADAPTIVE BA: Try progressively more tolerant settings
+        reconstruction = None
+        attempts = [
+            (args.max_reproj_error, args.vis_thresh, "initial"),
+            (args.max_reproj_error * 1.5, args.vis_thresh * 0.8, "relaxed"), 
+            (args.max_reproj_error * 2.0, args.vis_thresh * 0.5, "very_relaxed"),
+            (args.max_reproj_error * 3.0, 0.01, "desperate")
+        ]
+        
+        for max_err, vis_th, attempt_name in attempts:
+            print(f"BA attempt '{attempt_name}': max_error={max_err:.1f}, vis_thresh={vis_th:.3f}")
+            
+            adaptive_mask = pred_vis_scores > vis_th
+            print(f"  Using {adaptive_mask.sum()} tracks (was {track_mask.sum()})")
+            
+            if adaptive_mask.sum() < 50:
+                print(f"  Skipping: too few tracks")
+                continue
+                
+            reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
+                points_3d,
+                extrinsic,  # Use W2C format for consistency
+                intrinsic,
+                pred_tracks,
+                image_size,
+                masks=adaptive_mask,
+                max_reproj_error=max_err,
+                shared_camera=shared_camera,
+                camera_type=args.camera_type,
+                points_rgb=points_rgb,
+            )
+            
+            if reconstruction is not None:
+                print(f"  SUCCESS with '{attempt_name}' settings!")
+                break
+            else:
+                print(f"  Failed with '{attempt_name}' settings")
 
         if reconstruction is None:
-            raise ValueError("No reconstruction can be built with BA")
+            raise ValueError("No reconstruction can be built with BA even with relaxed settings")
 
         # Bundle Adjustment
         ba_options = pycolmap.BundleAdjustmentOptions()
