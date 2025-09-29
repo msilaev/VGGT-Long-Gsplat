@@ -228,6 +228,8 @@ class VGGT_Long:
         vggt_fixed_resolution = 518
         img_load_resolution = 1024
 
+        print(chunk_image_paths)
+
         images, _ = load_and_preprocess_images_square(chunk_image_paths, img_load_resolution)
         images = images.to(self.device)
         #original_coords = original_coords.to(self.device)
