@@ -165,6 +165,12 @@ def demo_fn(args):
     print(f"Example extrinsics[1]:\n", extrinsic[1])
     print(f"Example extrinsics[2]:\n", extrinsic[2])
 
+    print(f"Example intrinsic[1]:\n", intrinsic[1])
+    print(f"Example intrinsic[2]:\n", intrinsic[2])
+
+    print(f"Example depth_map[1] shape:\n", depth_map[1][1,1])
+    print(f"Example depth_map[2] shape:\n", depth_map[2][1,1])
+
     image_dir = args.scene_dir
     path = image_dir.split("/")
     exp_dir = './exps'
@@ -188,7 +194,7 @@ def demo_fn(args):
     print(f"Camera intrinsics loaded from {intrinsics_path}")
 
     extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    #extrinsic = np.load(extrinsic_path)
+    extrinsic = np.load(extrinsic_path)
     print(f"Camera extrinsics loaded from {extrinsic_path}")
 
     #for i in range(len(extrinsic)):

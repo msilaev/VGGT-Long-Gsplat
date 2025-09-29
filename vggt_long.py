@@ -618,6 +618,11 @@ class VGGT_Long:
         print(f"Example aligned pose for image 1:\n", all_poses_original[1])
         print(f"Example aligned pose for image 2:\n", all_poses_original[2])
 
+        print(f"Example intrinsic for image 1:\n", all_intrinsics[1])
+        print(f"Example intrinsic for image 2:\n", all_intrinsics[2])
+
+        print(f"Example depth map for image 1 shape:\n", all_depths[1][1,1])
+        print(f"Example depth map for image 2 shape:\n", all_depths[2][1,1])
 
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:
