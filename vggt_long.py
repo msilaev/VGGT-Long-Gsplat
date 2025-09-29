@@ -253,19 +253,19 @@ class VGGT_Long:
         print("Converting pose encoding to extrinsic and intrinsic matrices...")
         extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
         
-        extrinsic = extrinsic.cpu().numpy().squeeze(0)
-        intrinsic = intrinsic.cpu().numpy().squeeze(0)
+        #extrinsic = extrinsic.cpu().numpy().squeeze(0)
+        #intrinsic = intrinsic.cpu().numpy().squeeze(0)
 
-        print(f"Example extrinsics[1]:\n", extrinsic[1])
-        print(f"Example extrinsics[2]:\n", extrinsic[2])
+        #print(f"Example extrinsics[1]:\n", extrinsic[1])
+        #print(f"Example extrinsics[2]:\n", extrinsic[2])
         
-        predictions["extrinsic"] = extrinsic_1
-        predictions["intrinsic"] = intrinsic_1
-        predictions["depth"] = depth_map_1
-        predictions["depth_conf"] = depth_conf_1
+        predictions["extrinsic"] = extrinsic
+        predictions["intrinsic"] = intrinsic
+        #predictions["depth"] = depth_map
+        #predictions["depth_conf"] = depth_conf
 
-        print(f"Example extrinsics_1[1]:\n", extrinsic_1[1])
-        print(f"Example extrinsics_1[2]:\n", extrinsic_1[2])
+        #print(f"Example extrinsics_1[1]:\n", extrinsic_1[1])
+        #print(f"Example extrinsics_1[2]:\n", extrinsic_1[2])
 
 
 
@@ -302,8 +302,8 @@ class VGGT_Long:
             print(f"shape of extrinsics: {extrinsics.shape}")
             print(f"shape of intrinsics: {intrinsics.shape}")
 
-            print(f"Test extrinsics[1]:\n", extrinsics[1] )
-            print(f"Test extrinsics[2]:\n", extrinsics[2] )
+            #print(f"Test extrinsics[1]:\n", extrinsics[1] )
+            #print(f"Test extrinsics[2]:\n", extrinsics[2] )
 
 
             self.all_camera_poses.append((chunk_range, extrinsics))
