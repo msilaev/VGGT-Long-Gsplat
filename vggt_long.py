@@ -606,6 +606,8 @@ class VGGT_Long:
             S[:3, :3] = s * R
             S[:3, 3] = t
 
+            print(f"Scale matrix S: {s} for chunk {chunk_idx}  ")
+
             for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
 
                 # Save original poses - added
