@@ -252,6 +252,13 @@ class VGGT_Long:
 
         print("Converting pose encoding to extrinsic and intrinsic matrices...")
         extrinsic, intrinsic = pose_encoding_to_extri_intri(predictions["pose_enc"], images.shape[-2:])
+        
+        extrinsic = extrinsic.cpu().numpy().squeeze(0)
+        intrinsic = intrinsic.cpu().numpy().squeeze(0)
+
+        print(f"Example extrinsics[1]:\n", extrinsic[1])
+        print(f"Example extrinsics[2]:\n", extrinsic[2])
+        
         predictions["extrinsic"] = extrinsic_1
         predictions["intrinsic"] = intrinsic_1
         predictions["depth"] = depth_map_1
@@ -260,8 +267,7 @@ class VGGT_Long:
         print(f"Example extrinsics_1[1]:\n", extrinsic_1[1])
         print(f"Example extrinsics_1[2]:\n", extrinsic_1[2])
 
-        print(f"Example extrinsics[1]:\n", extrinsic[1])
-        print(f"Example extrinsics[2]:\n", extrinsic[2])
+
 
         print("Processing model outputs...")
         for key in predictions.keys():
