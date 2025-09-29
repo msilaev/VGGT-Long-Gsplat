@@ -160,16 +160,16 @@ def demo_fn(args):
 
     # # Run VGGT to estimate camera and depth
     # # Run with 518x518 images
-    extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
+    #extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
 
-    print(f"Example extrinsics[1]:\n", extrinsic[1])
-    print(f"Example extrinsics[2]:\n", extrinsic[2])
+    #print(f"Example extrinsics[1]:\n", extrinsic[1])
+    #print(f"Example extrinsics[2]:\n", extrinsic[2])
 
-    print(f"Example intrinsic[1]:\n", intrinsic[1])
-    print(f"Example intrinsic[2]:\n", intrinsic[2])
+    #print(f"Example intrinsic[1]:\n", intrinsic[1])
+    #print(f"Example intrinsic[2]:\n", intrinsic[2])
 
-    print(f"Example depth_map[1] shape:\n", depth_map[1][1,1])
-    print(f"Example depth_map[2] shape:\n", depth_map[2][1,1])
+    #print(f"Example depth_map[1] shape:\n", depth_map[1][1,1])
+    #print(f"Example depth_map[2] shape:\n", depth_map[2][1,1])
 
     image_dir = args.scene_dir
     path = image_dir.split("/")
@@ -183,10 +183,10 @@ def demo_fn(args):
     #    )
 
     depth_path = os.path.join(data_dir, 'depth_maps.npy')
-    #depth_map = np.load(depth_path)
+    depth_map = np.load(depth_path)
     print(f"Depth maps loaded from {depth_path}")
     depth_conf_path = os.path.join(data_dir, 'depth_confs.npy')
-    #depth_conf = np.load(depth_conf_path)
+    depth_conf = np.load(depth_conf_path)
     print(f"Depth confidence maps loaded from {depth_conf_path}")
 
     intrinsics_path = os.path.join(data_dir, 'intrinsic.npy')
