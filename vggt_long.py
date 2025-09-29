@@ -647,12 +647,48 @@ class VGGT_Long:
                                 # Compare rotation (Frobenius norm of rotation difference)
                                 rot_diff = np.linalg.norm(prev_pose[:3, :3] - transformed_curr[:3, :3], 'fro')
 
-                                print(f"  Image {test_idx}: position diff = {pos_diff:.6f}, rotation diff = {rot_diff:.6f}")
+                                # Compare depth maps for overlap images
+                                prev_chunk_depths = self.all_camera_depths[chunk_idx-1][1]
+                                curr_chunk_depths = self.all_camera_depths[chunk_idx][1]
+                                
+                                prev_depth_local_idx = test_idx - prev_chunk_range[0]
+                                if (0 <= prev_depth_local_idx < len(prev_chunk_depths) and 
+                                    0 <= curr_chunk_local_idx < len(curr_chunk_depths)):
+                                    
+                                    prev_depth = prev_chunk_depths[prev_depth_local_idx]
+                                    curr_depth = curr_chunk_depths[curr_chunk_local_idx]
+                                    
+                                    # Compare depth statistics
+                                    prev_depth_mean = np.mean(prev_depth)
+                                    curr_depth_mean = np.mean(curr_depth)
+                                    prev_depth_std = np.std(prev_depth)
+                                    curr_depth_std = np.std(curr_depth)
+                                    
+                                    depth_mean_diff = abs(prev_depth_mean - curr_depth_mean)
+                                    depth_std_diff = abs(prev_depth_std - curr_depth_std)
+                                    
+                                    # Pixel-wise depth difference (sample subset for efficiency)
+                                    h, w = prev_depth.shape[:2]
+                                    sample_mask = np.random.choice(h*w, min(1000, h*w//4), replace=False)
+                                    prev_sample = prev_depth.flatten()[sample_mask]
+                                    curr_sample = curr_depth.flatten()[sample_mask]
+                                    pixel_diff_mean = np.mean(np.abs(prev_sample - curr_sample))
+                                    
+                                    print(f"  Image {test_idx}: position diff = {pos_diff:.6f}, rotation diff = {rot_diff:.6f}")
+                                    print(f"    Depth mean diff = {depth_mean_diff:.4f}, std diff = {depth_std_diff:.4f}")
+                                    print(f"    Pixel-wise depth diff = {pixel_diff_mean:.4f}")
+                                else:
+                                    print(f"  Image {test_idx}: position diff = {pos_diff:.6f}, rotation diff = {rot_diff:.6f}")
+                                    print(f"    Depth comparison: index out of bounds")
                                 
                                 if pos_diff > 0.1:
                                     print(f"  WARNING: Large position difference for image {test_idx}!")
                                 if rot_diff > 0.1:
                                     print(f"  WARNING: Large rotation difference for image {test_idx}!")
+                                if 'depth_mean_diff' in locals() and depth_mean_diff > 1.0:
+                                    print(f"  WARNING: Large depth mean difference for image {test_idx}!")
+                                if 'pixel_diff_mean' in locals() and pixel_diff_mean > 0.5:
+                                    print(f"  WARNING: Large pixel-wise depth difference for image {test_idx}!")
                 print("=== END ALIGNMENT TEST ===\n")
 
             for i, idx in enumerate(range(chunk_range[0], chunk_range[1])):
