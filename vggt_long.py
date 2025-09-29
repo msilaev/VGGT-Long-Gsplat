@@ -254,6 +254,10 @@ class VGGT_Long:
         predictions["intrinsic"] = intrinsic_1
         predictions["depth"] = depth_map_1
         predictions["depth_conf"] = depth_conf_1
+
+        print(f"Example extrinsics_1[1]:\n", extrinsic_1[1])
+        print(f"Example extrinsics_1[2]:\n", extrinsic_1[2])
+
         print("Processing model outputs...")
         for key in predictions.keys():
             if isinstance(predictions[key], torch.Tensor):
