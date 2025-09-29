@@ -696,6 +696,10 @@ class VGGT_Long:
         extrinsic_path = os.path.join(self.output_dir, 'extrinsic.npy')
         #np.save(extrinsic_path, all_poses_original)
         np.save(extrinsic_path, all_poses_w2c)
+
+        print("Example W2C aligned pose for image 1:\n", all_poses_w2c[1])
+        print("Example original pose for image 1:\n", all_poses_original[1])
+
         print(f"Camera extrinsics (W2C aligned) saved to {extrinsic_path}")
         
         # Also save C2W format for backward compatibility
