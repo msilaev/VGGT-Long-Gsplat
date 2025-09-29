@@ -287,7 +287,8 @@ class VGGT_Long:
             print(f"shape of extrinsics: {extrinsics.shape}")
             print(f"shape of intrinsics: {intrinsics.shape}")
 
-            print(f"Test extrinsics[0]:\n", extrinsics[0] )
+            print(f"Test extrinsics[1]:\n", extrinsics[1] )
+            print(f"Test extrinsics[2]:\n", extrinsics[2] )
 
 
             self.all_camera_poses.append((chunk_range, extrinsics))
@@ -608,8 +609,10 @@ class VGGT_Long:
                 all_depths[idx] = chunk_depths[i]
                 all_depth_confs[idx] = chunk_depths_confs[i]
         
-        print(f"Example aligned pose for image 0:\n", all_poses_original[0])
-        
+        print(f"Example aligned pose for image 1:\n", all_poses_original[1])
+        print(f"Example aligned pose for image 2:\n", all_poses_original[2])
+
+
         poses_path = os.path.join(self.output_dir, 'camera_poses.txt')
         with open(poses_path, 'w') as f:
             for pose in all_poses:

@@ -160,7 +160,8 @@ def demo_fn(args):
     # # Run with 518x518 images
     extrinsic, intrinsic, depth_map, depth_conf = run_VGGT(model, images, dtype, vggt_fixed_resolution)
 
-    print(f"Example extrinsics[0]:\n", extrinsic[0])
+    print(f"Example extrinsics[1]:\n", extrinsic[1])
+    print(f"Example extrinsics[2]:\n", extrinsic[2])
 
     image_dir = args.scene_dir
     path = image_dir.split("/")
