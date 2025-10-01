@@ -333,21 +333,7 @@ class VGGT_Long:
                 end_idx = min(start_idx + self.chunk_size, len(self.img_list))
                 self.chunk_indices.append((start_idx, end_idx))
         
-        if self.loop_enable:
-            print('Loop SIM(3) estimating...')
-            loop_results = process_loop_list(self.chunk_indices, 
-                                             self.loop_list, 
-                                             half_window = int(self.config['Model']['loop_chunk_size'] / 2))
-            loop_results = remove_duplicates(loop_results)
-            print(loop_results)
-            # return e.g. (31, (1574, 1594), 2, (129, 149))
-            for item in loop_results:
-                single_chunk_predictions = self.process_single_chunk(item[1], range_2=item[3], is_loop=True)
-
-                self.loop_predict_list.append((item, single_chunk_predictions))
-                print(item)
-            
-
+           
         print(f"Processing {len(self.img_list)} images in {num_chunks} chunks of size {self.chunk_size} with {self.overlap} overlap")
 
         for chunk_idx in range(len(self.chunk_indices)):
@@ -384,101 +370,7 @@ class VGGT_Long:
 
             self.sim3_list.append((s, R, t))
 
-
-        if self.loop_enable:
-            for item in self.loop_predict_list:
-                chunk_idx_a = item[0][0]
-                chunk_idx_b = item[0][2]
-                chunk_a_range = item[0][1]
-                chunk_b_range = item[0][3]
-
-                print('chunk_a align')
-                point_map_loop = item[1]['world_points'][:chunk_a_range[1] - chunk_a_range[0]]
-                conf_loop = item[1]['world_points_conf'][:chunk_a_range[1] - chunk_a_range[0]]
-                chunk_a_rela_begin = chunk_a_range[0] - self.chunk_indices[chunk_idx_a][0]
-                chunk_a_rela_end = chunk_a_rela_begin + chunk_a_range[1] - chunk_a_range[0]
-                print(self.chunk_indices[chunk_idx_a])
-                print(chunk_a_range)
-                print(chunk_a_rela_begin, chunk_a_rela_end)
-                chunk_data_a = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx_a}.npy"), allow_pickle=True).item()
-                
-                point_map_a = chunk_data_a['world_points'][chunk_a_rela_begin:chunk_a_rela_end]
-                conf_a = chunk_data_a['world_points_conf'][chunk_a_rela_begin:chunk_a_rela_end]
-            
-                conf_threshold = min(np.median(conf_a), np.median(conf_loop)) * 0.1
-                s_a, R_a, t_a = weighted_align_point_maps(point_map_a, 
-                                                          conf_a, 
-                                                          point_map_loop, 
-                                                          conf_loop, 
-                                                          conf_threshold=conf_threshold,
-                                                          config=self.config)
-                print("Estimated Scale:", s_a)
-                print("Estimated Rotation:\n", R_a)
-                print("Estimated Translation:", t_a)
-
-                print('chunk_a align')
-                point_map_loop = item[1]['world_points'][-chunk_b_range[1] + chunk_b_range[0]:]
-                conf_loop = item[1]['world_points_conf'][-chunk_b_range[1] + chunk_b_range[0]:]
-                chunk_b_rela_begin = chunk_b_range[0] - self.chunk_indices[chunk_idx_b][0]
-                chunk_b_rela_end = chunk_b_rela_begin + chunk_b_range[1] - chunk_b_range[0]
-                print(self.chunk_indices[chunk_idx_b])
-                print(chunk_b_range)
-                print(chunk_b_rela_begin, chunk_b_rela_end)
-                chunk_data_b = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx_b}.npy"), allow_pickle=True).item()
-                
-                point_map_b = chunk_data_b['world_points'][chunk_b_rela_begin:chunk_b_rela_end]
-                conf_b = chunk_data_b['world_points_conf'][chunk_b_rela_begin:chunk_b_rela_end]
-            
-                conf_threshold = min(np.median(conf_b), np.median(conf_loop)) * 0.1
-                s_b, R_b, t_b = weighted_align_point_maps(point_map_b, 
-                                                          conf_b, 
-                                                          point_map_loop, 
-                                                          conf_loop, 
-                                                          conf_threshold=conf_threshold,
-                                                          config=self.config)
-                print("Estimated Scale:", s_b)
-                print("Estimated Rotation:\n", R_b)
-                print("Estimated Translation:", t_b)
-
-                print('a -> b SIM 3')
-                s_ab, R_ab, t_ab = compute_sim3_ab((s_a, R_a, t_a), (s_b, R_b, t_b))
-                print("Estimated Scale:", s_ab)
-                print("Estimated Rotation:\n", R_ab)
-                print("Estimated Translation:", t_ab)
-
-                self.loop_sim3_list.append((chunk_idx_a, chunk_idx_b, (s_ab, R_ab, t_ab)))
-
-
-        if self.loop_enable:
-            input_abs_poses = self.loop_optimizer.sequential_to_absolute_poses(self.sim3_list)
-            self.sim3_list = self.loop_optimizer.optimize(self.sim3_list, self.loop_sim3_list)
-            optimized_abs_poses = self.loop_optimizer.sequential_to_absolute_poses(self.sim3_list)
-
-            def extract_xyz(pose_tensor):
-                poses = pose_tensor.cpu().numpy()
-                return poses[:, 0], poses[:, 1], poses[:, 2]
-            
-            x0, _, y0 = extract_xyz(input_abs_poses)
-            x1, _, y1 = extract_xyz(optimized_abs_poses)
-
-            # Visual in png format
-            plt.figure(figsize=(8, 6))
-            plt.plot(x0, y0, 'o--', alpha=0.45, label='Before Optimization')
-            plt.plot(x1, y1, 'o-', label='After Optimization')
-            for i, j, _ in self.loop_sim3_list:
-                plt.plot([x0[i], x0[j]], [y0[i], y0[j]], 'r--', alpha=0.25, label='Loop (Before)' if i == 5 else "")
-                plt.plot([x1[i], x1[j]], [y1[i], y1[j]], 'g-', alpha=0.35, label='Loop (After)' if i == 5 else "")
-            plt.gca().set_aspect('equal')
-            plt.title("Sim3 Loop Closure Optimization")
-            plt.xlabel("x")
-            plt.ylabel("z")
-            plt.legend()
-            plt.grid(True)
-            plt.axis("equal")
-            save_path = os.path.join(self.output_dir, 'sim3_opt_result.png')
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            plt.close()
-
+    
         print('Apply alignment')
         self.sim3_list = accumulate_sim3_transforms(self.sim3_list)
         for chunk_idx in range(len(self.chunk_indices)-1):
@@ -842,6 +734,161 @@ def copy_file(src_path, dst_dir):
         print("Permission Error")
     except Exception as e:
         print(f"Copy Error: {e}")
+
+
+# Sequential bundle adjustment for chunks
+
+def _create_merged_reference(self, chunk_indices):
+    """Create merged reference data from multiple aligned chunks"""
+    merged_data = {
+        'world_points': [],
+        'world_points_conf': [],
+        'images': [],
+        'extrinsic': [],
+        'intrinsic': [],
+        'depth': [],
+        'depth_conf': []
+    }
+    
+    for chunk_idx in chunk_indices:
+        if chunk_idx == 0:
+            # First chunk uses unaligned data (reference)
+            chunk_data = np.load(os.path.join(self.result_unaligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
+        else:
+            # Other chunks use aligned data
+            chunk_data = np.load(os.path.join(self.result_aligned_dir, f"chunk_{chunk_idx}.npy"), allow_pickle=True).item()
+        
+        # Concatenate all data
+        for key in merged_data.keys():
+            if key in chunk_data:
+                if len(merged_data[key]) == 0:
+                    merged_data[key] = chunk_data[key]
+                else:
+                    merged_data[key] = np.concatenate([merged_data[key], chunk_data[key]], axis=0)
+    
+    return merged_data
+
+def _apply_bundle_adjustment_to_chunks(self, chunk_indices):
+    """Apply bundle adjustment to merged chunks and return refined data"""
+    try:
+        import subprocess
+        import tempfile
+        
+        print(f"Running bundle adjustment on chunks {chunk_indices}...")
+        
+        # Create merged data
+        merged_data = self._create_merged_reference(chunk_indices)
+        
+        # Save merged data to temporary directory
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save data for bundle adjustment
+            temp_image_dir = os.path.join(temp_dir, "images") 
+            temp_output_dir = os.path.join(temp_dir, "output")
+            os.makedirs(temp_image_dir, exist_ok=True)
+            os.makedirs(temp_output_dir, exist_ok=True)
+            
+            # Extract image paths for the merged chunks
+            image_paths = []
+            for chunk_idx in chunk_indices:
+                chunk_range = self.chunk_indices[chunk_idx]
+                chunk_images = self.img_list[chunk_range[0]:chunk_range[1]]
+                image_paths.extend(chunk_images)
+            
+            # Create symlinks to original images
+            for i, img_path in enumerate(image_paths):
+                link_path = os.path.join(temp_image_dir, f"{i:06d}.jpg")
+                if not os.path.exists(link_path):
+                    os.symlink(img_path, link_path)
+            
+            # Save camera data
+            np.save(os.path.join(temp_output_dir, 'extrinsic.npy'), merged_data['extrinsic'])
+            np.save(os.path.join(temp_output_dir, 'intrinsic.npy'), merged_data['intrinsic'])
+            np.save(os.path.join(temp_output_dir, 'depth_maps.npy'), merged_data['depth'])
+            np.save(os.path.join(temp_output_dir, 'depth_confs.npy'), merged_data['depth_conf'])
+            
+            # Run bundle adjustment
+            cmd = [
+                'python', 'demo_colmap.py',
+                '--scene_dir', temp_image_dir,
+                '--output_dir', temp_output_dir,
+                '--use_ba',
+                '--max_reproj_error', '16.0',  # More tolerant
+                '--vis_thresh', '0.1',         # Lower visibility threshold
+                '--save_refined_poses'         # Save results
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd='.')
+            
+            if result.returncode == 0:
+                print("Bundle adjustment completed successfully")
+                
+                # Load refined poses
+                refined_extrinsic_path = os.path.join(temp_output_dir, 'extrinsic_refined.npy')
+                refined_intrinsic_path = os.path.join(temp_output_dir, 'intrinsic_refined.npy')
+                
+                if os.path.exists(refined_extrinsic_path):
+                    refined_extrinsics = np.load(refined_extrinsic_path)
+                    refined_intrinsics = np.load(refined_intrinsic_path)
+                    
+                    # Update merged data with refined poses
+                    merged_data['extrinsic'] = refined_extrinsics
+                    merged_data['intrinsic'] = refined_intrinsics
+                    
+                    print(f"Loaded refined poses: {len(refined_extrinsics)} cameras")
+                    return merged_data
+                else:
+                    print("Refined poses not found - bundle adjustment may have failed")
+                    return None
+            else:
+                print(f"Bundle adjustment failed with return code {result.returncode}")
+                print(f"Error output: {result.stderr}")
+                return None
+                
+    except Exception as e:
+        print(f"Bundle adjustment error: {e}")
+        return None
+
+def _save_refined_chunks(self, refined_data, chunk_indices):
+    """Save refined data back to individual chunk files"""
+    
+    # Split refined data back into individual chunks
+    current_idx = 0
+    
+    for chunk_idx in chunk_indices:
+        chunk_range = self.chunk_indices[chunk_idx]
+        chunk_length = chunk_range[1] - chunk_range[0]
+        
+        # Extract chunk data from refined merged data
+        chunk_data = {}
+        for key in ['world_points', 'world_points_conf', 'images', 'extrinsic', 'intrinsic', 'depth', 'depth_conf']:
+            if key in refined_data:
+                chunk_data[key] = refined_data[key][current_idx:current_idx + chunk_length]
+        
+        # Save refined chunk
+        refined_chunk_path = os.path.join(self.result_aligned_dir, f"chunk_{chunk_idx}_refined.npy")
+        np.save(refined_chunk_path, chunk_data)
+        
+        # Also update the regular aligned chunk file
+        aligned_chunk_path = os.path.join(self.result_aligned_dir, f"chunk_{chunk_idx}.npy") 
+        np.save(aligned_chunk_path, chunk_data)
+        
+        current_idx += chunk_length
+        
+        print(f"Saved refined chunk {chunk_idx} with {chunk_length} frames")
+
+
+
+
+
+
+######################################################
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
 
