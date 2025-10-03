@@ -318,6 +318,7 @@ class VGGT_Long:
         
         return predictions if is_loop or range_2 is not None else None
     
+
     def process_long_sequence(self):
         if self.overlap >= self.chunk_size:
             raise ValueError(f"[SETTING ERROR] Overlap ({self.overlap}) must be less than chunk size ({self.chunk_size})")
@@ -347,7 +348,6 @@ class VGGT_Long:
                 self.loop_predict_list.append((item, single_chunk_predictions))
                 print(item)
             
-
         print(f"Processing {len(self.img_list)} images in {num_chunks} chunks of size {self.chunk_size} with {self.overlap} overlap")
 
         for chunk_idx in range(len(self.chunk_indices)):

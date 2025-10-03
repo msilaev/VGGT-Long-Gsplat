@@ -194,36 +194,36 @@ def demo_fn(args):
         # Predicting Tracks - Multiple options for memory efficiency
         # Using alternative tracking methods for long sequences (165+ frames)
         
-        # Generate RGB colors for 3D points (needed for all tracking methods)
-        points_rgb = F.interpolate(images, size=(518, 518), mode="bilinear", align_corners=False)
-        points_rgb = (points_rgb.cpu().numpy() * 255).astype(np.uint8)
-        points_rgb = points_rgb.transpose(0, 2, 3, 1)  # (S, H, W, 3)
+        # # Generate RGB colors for 3D points (needed for all tracking methods)
+        # points_rgb = F.interpolate(images, size=(518, 518), mode="bilinear", align_corners=False)
+        # points_rgb = (points_rgb.cpu().numpy() * 255).astype(np.uint8)
+        # points_rgb = points_rgb.transpose(0, 2, 3, 1)  # (S, H, W, 3)
         
-        if args.predict_tracks_type == 'colmap':
+        # if args.predict_tracks_type == 'colmap':
                     
-            # Try COLMAP tracking first (most memory efficient for long sequences)
-            print("Using COLMAP tracking (production quality, memory efficient)")                               
+        #     # Try COLMAP tracking first (most memory efficient for long sequences)
+        #     print("Using COLMAP tracking (production quality, memory efficient)")                               
             
-            pred_tracks, pred_vis_scores, pred_confs = predict_tracks_with_colmap(
-                images,
-                conf=depth_conf,                    
-                max_query_pts=args.max_query_pts
-            )
+        #     pred_tracks, pred_vis_scores, pred_confs = predict_tracks_with_colmap(
+        #         images,
+        #         conf=depth_conf,                    
+        #         max_query_pts=args.max_query_pts
+        #     )
             
-        elif args.predict_tracks_type == 'vggsfm':
-            pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
-                images,
-                conf=depth_conf,
-                points_3d=points_3d,
-                masks=None,
-                max_query_pts=args.max_query_pts,
-                query_frame_num=args.query_frame_num,
-                keypoint_extractor="aliked+sp",
-                fine_tracking=args.fine_tracking,
-            )
+        if args.predict_tracks_type == 'vggsfm':
+                pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
+                    images,
+                    conf=depth_conf,
+                    points_3d=points_3d,
+                    masks=None,
+                    max_query_pts=args.max_query_pts,
+                    query_frame_num=args.query_frame_num,
+                    keypoint_extractor="aliked+sp",
+                    fine_tracking=args.fine_tracking,
+                )
 
         else:
-            raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
+                raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
 
         torch.cuda.empty_cache()
 
@@ -287,7 +287,6 @@ def demo_fn(args):
         shift_point2d_to_original_res=True,
         shared_camera=shared_camera,
     )
-
     
     print(f"Saving reconstruction to {args.scene_dir}/sparse")
     sparse_reconstruction_dir = os.path.join(args.scene_dir, "sparse")
@@ -297,110 +296,58 @@ def demo_fn(args):
     # Save point cloud for fast visualization
     trimesh.PointCloud(points_3d, colors=points_rgb).export(os.path.join(args.scene_dir, "sparse/points.ply"))
 
+    refined_extrinsics=[]
+    refined_intrinsics=[]
+
+    for image in reconstruction.images.values():
+
+        if not image.is_registered:
+            print(f"Image {image.name} not registered after BA, skipping...")
+            continue
+        camera = reconstruction.cameras[image.camera_id]
+        K = camera.calibration_matrix()
+        refined_intrinsics.append(K)
+
+        # Get refined extrinsic (W2C format)
+        R = image.rotation_matrix()
+        t =image.tvec
+        W2C = np.eye(4)
+        W2C[:3, :3] = R
+        W2C[:3, 3] = t
+        refined_extrinsics.append(W2C[:3, :])
+    
     ####################### Save updated extrinsics and intrinsics
-    # Add this after the successful bundle adjustment (around line 280-290)
-    # Right after: reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(...)
+    
+    # Save refined poses
+    refined_extrinsics = np.array(refined_extrinsics)
+    refined_intrinsics = np.array(refined_intrinsics)
+    
+    # Save refined extrinsics (W2C format)
+    refined_extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
+    np.save(refined_extrinsic_path, refined_extrinsics)
 
-    if reconstruction is not None and len(reconstruction.cameras) > 0:
-        print(f"Bundle adjustment successful! Saving refined poses...")
+    # Save refined intrinsics
+    refined_intrinsic_path = os.path.join(data_dir, 'intrinsic.npy')
+    np.save(refined_intrinsic_path, refined_intrinsics)
+       
+    print(f"Refined extrinsics (W2C) saved to: {refined_extrinsic_path}")    
+    print(f"Refined intrinsics saved to: {refined_intrinsic_path}")
+    
         
-        # Extract refined camera poses from COLMAP reconstruction
-        refined_extrinsics = []
-        refined_intrinsics = []
-        
-        # Get cameras and images in order
-        camera_ids = sorted(reconstruction.cameras.keys())
-        image_ids = sorted(reconstruction.images.keys())
-        
-        for img_id in image_ids:
-            image = reconstruction.images[img_id]
-            camera = reconstruction.cameras[image.camera_id]
-            
-            # Get refined extrinsic (W2C format)
-            quat = image.qvec  # quaternion (w, x, y, z)
-            trans = image.tvec # translation
-            
-            # Convert quaternion to rotation matrix
-            from scipy.spatial.transform import Rotation
-            r = Rotation.from_quat([quat[1], quat[2], quat[3], quat[0]])  # (x,y,z,w) format for scipy
-            R_w2c = r.as_matrix()
-            
-            # Create W2C extrinsic matrix (3x4)
-            extrinsic_w2c = np.hstack([R_w2c, trans.reshape(3, 1)])
-            refined_extrinsics.append(extrinsic_w2c)
-            
-            # Get refined intrinsic
-            if args.camera_type == "OPENCV":
-                fx, fy, cx, cy = camera.params[:4]
-            else:  # PINHOLE
-                fx, fy, cx, cy = camera.params[0], camera.params[0], camera.params[1], camera.params[2]
-                
-            intrinsic = np.array([
-                [fx, 0, cx],
-                [0, fy, cy], 
-                [0, 0, 1]
-            ])
-            refined_intrinsics.append(intrinsic)
-        
-        # Save refined poses
-        refined_extrinsics = np.array(refined_extrinsics)
-        refined_intrinsics = np.array(refined_intrinsics)
-        
-        # Save refined extrinsics (W2C format)
-        refined_extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-        np.save(refined_extrinsic_path, refined_extrinsics)
+    # Calculate average pose change
+    pose_changes = [np.linalg.norm(np.array(orig[:3, 3]) - np.array(ref[:3, 3])) 
+                for orig, ref in zip(extrinsic, refined_extrinsics)]
 
-        # Save refined intrinsics
-        refined_intrinsic_path = os.path.join(data_dir, 'intrinsic.npy')
-        np.save(refined_intrinsic_path, refined_intrinsics)
-        
-        # Also save as C2W format for compatibility
-        refined_c2w_poses = []
-        for extr in refined_extrinsics:
-            w2c = np.eye(4)
-            w2c[:3, :] = extr
-            c2w = np.linalg.inv(w2c)
-            refined_c2w_poses.append(c2w)
-        
-        refined_c2w_path = os.path.join(data_dir, 'extrinsic_c2w_refined.npy')
-        np.save(refined_c2w_path, np.array(refined_c2w_poses))
-        
-        print(f"Refined extrinsics (W2C) saved to: {refined_extrinsic_path}")
-        print(f"Refined extrinsics (C2W) saved to: {refined_c2w_path}")
-        print(f"Refined intrinsics saved to: {refined_intrinsic_path}")
-        
-        # Calculate improvement metrics
-        if 'extrinsic' in locals():
-            original_positions = []
-            refined_positions = []
-            
-            for i, orig_extr in enumerate(extrinsic):
-                # Original position (from C2W)
-                orig_w2c = np.eye(4)
-                orig_w2c[:3, :] = orig_extr
-                orig_c2w = np.linalg.inv(orig_w2c)
-                original_positions.append(orig_c2w[:3, 3])
-                
-                # Refined position
-                refined_positions.append(refined_c2w_poses[i][:3, 3])
-            
-            # Calculate average pose change
-            pose_changes = [np.linalg.norm(np.array(orig) - np.array(ref)) 
-                        for orig, ref in zip(original_positions, refined_positions)]
-            avg_pose_change = np.mean(pose_changes)
-            max_pose_change = np.max(pose_changes)
-            
-            print(f"Bundle adjustment pose refinement:")
-            print(f"  Average pose change: {avg_pose_change:.6f}")
-            print(f"  Maximum pose change: {max_pose_change:.6f}")
-            print(f"  Number of refined poses: {len(refined_extrinsics)}")
+    original_poses= [np.linalg.norm(np.array(orig[:3,3])) for orig in extrinsic] 
 
-    else:
-        print("Bundle adjustment failed - no refined poses to save")
-
-
-
-
+    avg_pose_change = np.mean(pose_changes)/np.max(original_poses)
+    max_pose_change = np.max(pose_changes)/np.max(original_poses)
+    
+    print(f"Bundle adjustment pose refinement:")
+    print(f"  Average pose change: {avg_pose_change:.6f}")
+    print(f"  Maximum pose change: {max_pose_change:.6f}")
+    print(f"  Number of refined poses: {len(refined_extrinsics)}")
+    
     return True
 
 
