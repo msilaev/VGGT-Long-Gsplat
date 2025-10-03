@@ -20,6 +20,7 @@ def predict_tracks(
     max_points_num=163840,
     fine_tracking=True,
     complete_non_vis=True,
+    batch_size=64,
 ):
     """
     Predict tracks for the given images and masks.
@@ -82,7 +83,25 @@ def predict_tracks(
     pred_points_3d = []
     pred_colors = []
 
-    fmaps_for_tracker = tracker.process_images_to_fmaps(images)
+    print(f"Processing {len(images)} images in batches of {batch_size} to feature maps for tracking")
+
+    fmaps_for_tracker = []
+    for b in range(0, len(images), batch_size):
+        b_images = images[b : b + batch_size]
+        print(f"Processing images {b} to {b + len(b_images)}")
+
+        torch.cuda.empty_cache()
+
+        with torch.cuda.amp.autocast():
+            b_fmaps = tracker.process_images_to_fmaps(b_images)
+        
+        fmaps_for_tracker.append(b_fmaps)
+
+        torch.cuda.empty_cache()
+
+    #fmaps_for_tracker = tracker.process_images_to_fmaps(images)
+    fmaps_for_tracker = torch.cat(fmaps_for_tracker, dim=0)
+    print(f"Feature extraction complete. Memory allocated: {torch.cuda.memory_allocated() / (1024**3):.2f} GB")
 
     if fine_tracking:
         print("For faster inference, consider disabling fine_tracking")
