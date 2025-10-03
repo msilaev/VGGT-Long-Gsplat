@@ -360,7 +360,7 @@ def demo_fn(args):
             pred_tracks,
             image_size,
             masks=adaptive_mask,
-            max_reproj_error=args.max_err,
+            max_reproj_error=args.max_reproj_error,
             shared_camera=shared_camera,
             camera_type=args.camera_type,
             points_rgb=points_rgb,
