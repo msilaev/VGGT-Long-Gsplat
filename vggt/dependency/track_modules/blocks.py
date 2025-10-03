@@ -309,7 +309,7 @@ class CorrBlock:
     def corr(self, targets, overlap_window=None):
         B, S, N, C = targets.shape
 
-        print(f"shape of targets: {targets.shape}")
+        #print(f"shape of targets: {targets.shape}")
         if self.multiple_track_feats:
             targets_split = targets.split(C // self.num_levels, dim=-1)
             B, S, N, C = targets_split[0].shape
