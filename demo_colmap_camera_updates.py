@@ -279,21 +279,21 @@ def demo_fn(args):
     ba_options = pycolmap.BundleAdjustmentOptions()
     pycolmap.bundle_adjustment(reconstruction, ba_options)
 
-    reconstruction_resolution = img_load_resolution
+    #reconstruction_resolution = img_load_resolution
 
-    reconstruction = rename_colmap_recons_and_rescale_camera(
-        reconstruction,
-        base_image_path_list,
-        original_coords.cpu().numpy(),
-        img_size=reconstruction_resolution,
-        shift_point2d_to_original_res=True,
-        shared_camera=shared_camera,
-    )
+    #reconstruction = rename_colmap_recons_and_rescale_camera(
+    #    reconstruction,
+    #    base_image_path_list,
+    #    original_coords.cpu().numpy(),
+    #    img_size=reconstruction_resolution,
+    #    shift_point2d_to_original_res=True,
+    #    shared_camera=shared_camera,
+    #)
     
-    print(f"Saving reconstruction to {args.scene_dir}/sparse")
-    sparse_reconstruction_dir = os.path.join(args.scene_dir, "sparse")
-    os.makedirs(sparse_reconstruction_dir, exist_ok=True)
-    reconstruction.write(sparse_reconstruction_dir)
+    #print(f"Saving reconstruction to {args.scene_dir}/sparse")
+    #sparse_reconstruction_dir = os.path.join(args.scene_dir, "sparse")
+    #os.makedirs(sparse_reconstruction_dir, exist_ok=True)
+    #reconstruction.write(sparse_reconstruction_dir)
 
     # Save point cloud for fast visualization
     trimesh.PointCloud(points_3d, colors=points_rgb).export(os.path.join(args.scene_dir, "sparse/points.ply"))
@@ -353,7 +353,7 @@ def demo_fn(args):
 
     # attempt reconstruction again 
     print("Validating refined cameras by attempting reconstruction again...")
-    reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
+    reconstruction_1, valid_track_mask = batch_np_matrix_to_pycolmap(
             points_3d,
             refined_extrinsic,  # Use W2C format for consistency
             refined_intrinsic,
@@ -366,7 +366,27 @@ def demo_fn(args):
             points_rgb=points_rgb,
         )
 
+
+    reconstruction_resolution = img_load_resolution
+
+    reconstruction = rename_colmap_recons_and_rescale_camera(
+        reconstruction,
+        base_image_path_list,
+        original_coords.cpu().numpy(),
+        img_size=reconstruction_resolution,
+        shift_point2d_to_original_res=True,
+        shared_camera=shared_camera,
+    )
     
+    
+
+    print(f"Saving reconstruction to {args.scene_dir}/sparse")
+    sparse_reconstruction_dir = os.path.join(args.scene_dir, "sparse")
+    os.makedirs(sparse_reconstruction_dir, exist_ok=True)
+    reconstruction.write(sparse_reconstruction_dir)
+
+    # Save point cloud for fast visualization
+    trimesh.PointCloud(points_3d, colors=points_rgb).export(os.path.join(args.scene_dir, "sparse/points.ply"))
     return True
 
 
