@@ -228,6 +228,11 @@ def demo_fn(args):
     ba_options.refine_principal_point = False
     ba_options.refine_extra_params = False   # distortion params
     ba_options.refine_extrinsics = True      # still refine R|t
+
+        # Additional strict settings to prevent intrinsic changes
+    ba_options.refine_intrinsics = False        # Explicitly disable intrinsic refinement
+    ba_options.constant_camera = True           # Keep camera parameters constant
+
     pycolmap.bundle_adjustment(reconstruction, ba_options)
 
     # Save point cloud for fast visualization
