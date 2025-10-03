@@ -318,7 +318,8 @@ def demo_fn(args):
     with torch.cuda.amp.autocast(dtype=dtype):
             
         if args.predict_tracks_type == 'vggsfm':
-                pred_tracks, pred_vis_scores, pred_confs, points_3d_1, points_rgb = predict_tracks(
+                pred_tracks_refined, pred_vis_scores_refined, pred_confs_refined, points_3d_1, \
+                points_rgb_refined = predict_tracks(
                     images,
                     conf=depth_conf,
                     points_3d=points_3d_1,
@@ -335,13 +336,16 @@ def demo_fn(args):
         torch.cuda.empty_cache()
 
 
+    # Re-evaluate track masks with refined visibility scores
+    refined_adaptive_mask = pred_vis_scores_refined > vis_th  # Use the successful vis_th from BA loop
+    
     reconstruction_1, valid_track_mask = batch_np_matrix_to_pycolmap(
             points_3d_1,
             refined_extrinsic,  # Use W2C format for consistency
             refined_intrinsics_scale, # Use original intrinsic for validation
-            pred_tracks,
+            pred_tracks_refined,
             image_size,
-            masks=adaptive_mask,
+            masks=refined_adaptive_mask,
             max_reproj_error=args.max_reproj_error,
             shared_camera=shared_camera,
             camera_type=args.camera_type,
