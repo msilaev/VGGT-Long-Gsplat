@@ -276,11 +276,11 @@ def demo_fn(args):
     refined_intrinsic = np.array(refined_intrinsic)
     
     # Save refined extrinsics (W2C format)
-    refined_extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
+    refined_extrinsic_path = os.path.join(data_dir, 'extrinsic_refined.npy')
     np.save(refined_extrinsic_path, refined_extrinsic)
 
     # Save refined intrinsics
-    refined_intrinsic_path = os.path.join(data_dir, 'intrinsic.npy')
+    refined_intrinsic_path = os.path.join(data_dir, 'intrinsic_refined.npy')
     np.save(refined_intrinsic_path, refined_intrinsic)
        
     print(f"Refined extrinsics (W2C) saved to: {refined_extrinsic_path}")    
@@ -314,7 +314,27 @@ def demo_fn(args):
     points_3d_1 = unproject_depth_map_to_point_map(depth_map, refined_extrinsic, refined_intrinsic)
     refined_intrinsics_scale = refined_intrinsic.copy()
     refined_intrinsics_scale[:, :2, :] *= scale
-    
+
+    with torch.cuda.amp.autocast(dtype=dtype):
+            
+        if args.predict_tracks_type == 'vggsfm':
+                pred_tracks, pred_vis_scores, pred_confs, points_3d_1, points_rgb = predict_tracks(
+                    images,
+                    conf=depth_conf,
+                    points_3d=points_3d_1,
+                    masks=None,
+                    max_query_pts=args.max_query_pts,
+                    query_frame_num=args.query_frame_num,
+                    keypoint_extractor="aliked+sp",
+                    fine_tracking=args.fine_tracking,
+                )
+
+        else:
+                raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
+
+        torch.cuda.empty_cache()
+
+
     reconstruction_1, valid_track_mask = batch_np_matrix_to_pycolmap(
             points_3d_1,
             refined_extrinsic,  # Use W2C format for consistency
