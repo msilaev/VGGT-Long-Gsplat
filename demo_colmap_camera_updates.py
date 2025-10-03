@@ -33,6 +33,8 @@ from vggt.utils.helper import create_pixel_coordinate_grid, randomly_limit_trues
 from vggt.dependency.track_predict import predict_tracks
 from vggt.dependency.np_to_pycolmap import batch_np_matrix_to_pycolmap, batch_np_matrix_to_pycolmap_wo_track
 
+from scipy.spatial.transform import Rotation as R
+
 
 # TODO: add support for masks
 # TODO: add iterative BA
@@ -306,7 +308,8 @@ def demo_fn(args):
         refined_intrinsic.append(K)
 
         # Get refined extrinsic (W2C format)        
-        R = pycolmap.qvec_to_rotmat(image.qvec)
+        quat = image.qvec
+        R = R.from_quat(quat[1], quat[2], quat[3], quat[0]).as_matrix()
         t = image.tvec
         W2C = np.eye(4)
         W2C[:3, :3] = R
