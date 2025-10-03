@@ -315,38 +315,38 @@ def demo_fn(args):
     refined_intrinsics_scale = refined_intrinsic.copy()
     refined_intrinsics_scale[:, :2, :] *= scale
 
-    with torch.cuda.amp.autocast(dtype=dtype):
+    #with torch.cuda.amp.autocast(dtype=dtype):
             
-        if args.predict_tracks_type == 'vggsfm':
-                pred_tracks_refined, pred_vis_scores_refined, pred_confs_refined, points_3d_1, \
-                points_rgb_refined = predict_tracks(
-                    images,
-                    conf=depth_conf,
-                    points_3d=points_3d_1,
-                    masks=None,
-                    max_query_pts=args.max_query_pts,
-                    query_frame_num=args.query_frame_num,
-                    keypoint_extractor="aliked+sp",
-                    fine_tracking=args.fine_tracking,
-                )
+    #    if args.predict_tracks_type == 'vggsfm':
+    #            pred_tracks_refined, pred_vis_scores_refined, pred_confs_refined, points_3d_1, \
+    #            points_rgb_refined = predict_tracks(
+    #                images,
+    #                conf=depth_conf,
+    #                points_3d=points_3d,
+    #                masks=None,
+    #                max_query_pts=args.max_query_pts,
+    #                query_frame_num=args.query_frame_num,
+    #                keypoint_extractor="aliked+sp",
+    #                fine_tracking=args.fine_tracking,
+    #            )
 
-        else:
-                raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
+    #    else:
+    #            raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
 
-        torch.cuda.empty_cache()
+    #    torch.cuda.empty_cache()
 
 
     # Re-evaluate track masks with refined visibility scores
-    refined_adaptive_mask = pred_vis_scores_refined > vis_th  # Use the successful vis_th from BA loop
+    #refined_adaptive_mask = pred_vis_scores_refined > vis_th  # Use the successful vis_th from BA loop
     
     reconstruction_1, valid_track_mask = batch_np_matrix_to_pycolmap(
-            points_3d_1,
+            points_3d,
             refined_extrinsic,  # Use W2C format for consistency
             refined_intrinsics_scale, # Use original intrinsic for validation
-            pred_tracks_refined,
+            pred_tracks,
             image_size,
-            masks=refined_adaptive_mask,
-            max_reproj_error=args.max_reproj_error,
+            masks=adaptive_mask,
+            max_reproj_error=3*args.max_reproj_error,
             shared_camera=shared_camera,
             camera_type=args.camera_type,
             points_rgb=points_rgb,
