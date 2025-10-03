@@ -322,7 +322,7 @@ def demo_fn(args):
                 points_rgb_refined = predict_tracks(
                 images,
                 conf=depth_conf,
-                points_3d=points_3d,
+                points_3d=points_3d_1,
                 masks=None,
                     max_query_pts=args.max_query_pts,
                     query_frame_num=args.query_frame_num,
