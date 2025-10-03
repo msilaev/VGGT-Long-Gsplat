@@ -308,7 +308,7 @@ def demo_fn(args):
         refined_intrinsic.append(K)
 
         # Get refined extrinsic (W2C Rigid3D format)
-        W2C = image.cam_from_world
+        W2C = image.cam_from_world.matrix()
         refined_extrinsic.append(W2C)
     
     ####################### Save updated extrinsics and intrinsics
