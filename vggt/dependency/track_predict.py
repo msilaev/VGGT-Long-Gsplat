@@ -93,8 +93,8 @@ def predict_tracks(
 
         torch.cuda.empty_cache()
 
-        with torch.cuda.amp.autocast():
-            b_fmaps = tracker.process_images_to_fmaps(b_images)
+        #with torch.cuda.amp.autocast():
+        b_fmaps = tracker.process_images_to_fmaps(b_images)
         
         fmaps_for_tracker.append(b_fmaps)
 
