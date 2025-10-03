@@ -88,7 +88,7 @@ def predict_tracks(
     fmaps_for_tracker = []
     for b in range(0, len(images), batch_size):
 
-        b_images = images[b : max(b + batch_size, len(images))]
+        b_images = images[b : min(b + batch_size, len(images))]
         print(f"Processing images {b} to {b + len(b_images)}")
 
         torch.cuda.empty_cache()
