@@ -296,39 +296,36 @@ def demo_fn(args):
     # Save point cloud for fast visualization
     trimesh.PointCloud(points_3d, colors=points_rgb).export(os.path.join(args.scene_dir, "sparse/points.ply"))
 
-    refined_extrinsics=[]
-    refined_intrinsics=[]
+    refined_extrinsic=[]
+    refined_intrinsic=[]
 
     for image in reconstruction.images.values():
 
-        if not image.is_registered:
-            print(f"Image {image.name} not registered after BA, skipping...")
-            continue
         camera = reconstruction.cameras[image.camera_id]
         K = camera.calibration_matrix()
-        refined_intrinsics.append(K)
+        refined_intrinsic.append(K)
 
         # Get refined extrinsic (W2C format)
         R = image.rotation_matrix()
-        t =image.tvec
+        t = image.tvec
         W2C = np.eye(4)
         W2C[:3, :3] = R
         W2C[:3, 3] = t
-        refined_extrinsics.append(W2C[:3, :])
+        refined_extrinsic.append(W2C[:3, :])
     
     ####################### Save updated extrinsics and intrinsics
     
     # Save refined poses
-    refined_extrinsics = np.array(refined_extrinsics)
-    refined_intrinsics = np.array(refined_intrinsics)
+    refined_extrinsic = np.array(refined_extrinsic)
+    refined_intrinsic = np.array(refined_intrinsic)
     
     # Save refined extrinsics (W2C format)
     refined_extrinsic_path = os.path.join(data_dir, 'extrinsic.npy')
-    np.save(refined_extrinsic_path, refined_extrinsics)
+    np.save(refined_extrinsic_path, refined_extrinsic)
 
     # Save refined intrinsics
     refined_intrinsic_path = os.path.join(data_dir, 'intrinsic.npy')
-    np.save(refined_intrinsic_path, refined_intrinsics)
+    np.save(refined_intrinsic_path, refined_intrinsic)
        
     print(f"Refined extrinsics (W2C) saved to: {refined_extrinsic_path}")    
     print(f"Refined intrinsics saved to: {refined_intrinsic_path}")
@@ -336,17 +333,40 @@ def demo_fn(args):
         
     # Calculate average pose change
     pose_changes = [np.linalg.norm(np.array(orig[:3, 3]) - np.array(ref[:3, 3])) 
-                for orig, ref in zip(extrinsic, refined_extrinsics)]
+                for orig, ref in zip(extrinsic, refined_extrinsic)]
 
-    original_poses= [np.linalg.norm(np.array(orig[:3,3])) for orig in extrinsic] 
+    original_poses = [np.linalg.norm(np.array(orig[:3, 3])) for orig in extrinsic]
 
     avg_pose_change = np.mean(pose_changes)/np.max(original_poses)
     max_pose_change = np.max(pose_changes)/np.max(original_poses)
-    
+
+    rot_changes = [np.linalg.norm(Rot_rel) for Rot_rel in [pycolmap.rotmat_to_rotvec(ref[:3,:3] @ orig[:3,:3].T) for orig, ref in zip(extrinsic, refined_extrinsic)]]
+
+    avg_rot_change = np.mean( rot_changes  )
+    max_rot_change = np.max( rot_changes  )
     print(f"Bundle adjustment pose refinement:")
     print(f"  Average pose change: {avg_pose_change:.6f}")
     print(f"  Maximum pose change: {max_pose_change:.6f}")
-    print(f"  Number of refined poses: {len(refined_extrinsics)}")
+    print(f"  Average rotation change (degrees): {avg_rot_change*180/np.pi:.6f}")
+    print(f"  Maximum rotation change (degrees): {max_rot_change*180/np.pi:.6f}")
+
+    print(f"  Number of refined poses: {len(refined_extrinsic)}")
+
+    # attempt reconstruction again 
+    print("Validating refined cameras by attempting reconstruction again...")
+    reconstruction, valid_track_mask = batch_np_matrix_to_pycolmap(
+            points_3d,
+            refined_extrinsic,  # Use W2C format for consistency
+            refined_intrinsic,
+            pred_tracks,
+            image_size,
+            masks=adaptive_mask,
+            max_reproj_error=args.max_err,
+            shared_camera=shared_camera,
+            camera_type=args.camera_type,
+            points_rgb=points_rgb,
+        )
+
     
     return True
 
