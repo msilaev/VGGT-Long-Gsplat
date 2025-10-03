@@ -219,6 +219,7 @@ def demo_fn(args):
                     query_frame_num=args.query_frame_num,
                     keypoint_extractor="aliked+sp",
                     fine_tracking=args.fine_tracking,
+                    batch_size=50, # ← Added butch_size parameter
                 )
 
             else:
