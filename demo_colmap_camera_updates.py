@@ -125,14 +125,6 @@ def demo_fn(args):
         print(f"GPU memory cleared. Available: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         print(f"GPU memory free: {torch.cuda.memory_reserved(0) / 1024**3:.1f} GB")
 
-    # # Run VGGT for camera and depth estimation
-    #model = VGGT()
-    #_URL = "https://huggingface.co/facebook/VGGT-1B/resolve/main/model.pt"
-    #model.load_state_dict(torch.hub.load_state_dict_from_url(_URL))
-    #model.eval()
-    #model = model.to(device)
-    #print(f"Model loaded")
-    ######################
 
     # # Get image paths and preprocess them
     #image_dir = os.path.join(args.scene_dir, "images")
@@ -193,24 +185,6 @@ def demo_fn(args):
     shared_camera = args.shared_camera
 
     with torch.cuda.amp.autocast(dtype=dtype):
-        # Predicting Tracks - Multiple options for memory efficiency
-        # Using alternative tracking methods for long sequences (165+ frames)
-        
-        # # Generate RGB colors for 3D points (needed for all tracking methods)
-        # points_rgb = F.interpolate(images, size=(518, 518), mode="bilinear", align_corners=False)
-        # points_rgb = (points_rgb.cpu().numpy() * 255).astype(np.uint8)
-        # points_rgb = points_rgb.transpose(0, 2, 3, 1)  # (S, H, W, 3)
-        
-        # if args.predict_tracks_type == 'colmap':
-                    
-        #     # Try COLMAP tracking first (most memory efficient for long sequences)
-        #     print("Using COLMAP tracking (production quality, memory efficient)")                               
-            
-        #     pred_tracks, pred_vis_scores, pred_confs = predict_tracks_with_colmap(
-        #         images,
-        #         conf=depth_conf,                    
-        #         max_query_pts=args.max_query_pts
-        #     )
             
         if args.predict_tracks_type == 'vggsfm':
                 pred_tracks, pred_vis_scores, pred_confs, points_3d, points_rgb = predict_tracks(
@@ -279,22 +253,6 @@ def demo_fn(args):
     ba_options = pycolmap.BundleAdjustmentOptions()
     pycolmap.bundle_adjustment(reconstruction, ba_options)
 
-    #reconstruction_resolution = img_load_resolution
-
-    #reconstruction = rename_colmap_recons_and_rescale_camera(
-    #    reconstruction,
-    #    base_image_path_list,
-    #    original_coords.cpu().numpy(),
-    #    img_size=reconstruction_resolution,
-    #    shift_point2d_to_original_res=True,
-    #    shared_camera=shared_camera,
-    #)
-    
-    #print(f"Saving reconstruction to {args.scene_dir}/sparse")
-    #sparse_reconstruction_dir = os.path.join(args.scene_dir, "sparse")
-    #os.makedirs(sparse_reconstruction_dir, exist_ok=True)
-    #reconstruction.write(sparse_reconstruction_dir)
-
     # Save point cloud for fast visualization
     trimesh.PointCloud(points_3d, colors=points_rgb).export(os.path.join(args.scene_dir, "sparse/points.ply"))
 
@@ -353,10 +311,14 @@ def demo_fn(args):
 
     # attempt reconstruction again 
     print("Validating refined cameras by attempting reconstruction again...")
+    points_3d_1 = unproject_depth_map_to_point_map(depth_map, refined_extrinsic, refined_intrinsic)
+    refined_intrinsics_scale = refined_intrinsic.copy()
+    refined_intrinsics_scale[:, :2, :] *= scale
+    
     reconstruction_1, valid_track_mask = batch_np_matrix_to_pycolmap(
-            points_3d,
+            points_3d_1,
             refined_extrinsic,  # Use W2C format for consistency
-            refined_intrinsic,
+            refined_intrinsics_scale, # Use original intrinsic for validation
             pred_tracks,
             image_size,
             masks=adaptive_mask,
