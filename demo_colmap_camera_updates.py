@@ -71,34 +71,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_VGGT(model, images, dtype, resolution=518):
-    # images: [B, 3, H, W]
-
-    assert len(images.shape) == 4
-    assert images.shape[1] == 3
-
-    # hard-coded to use 518 for VGGT
-    images = F.interpolate(images, size=(resolution, resolution), mode="bilinear", align_corners=False)
-
-    with torch.no_grad():
-        with torch.cuda.amp.autocast(dtype=dtype):
-            images = images[None]  # add batch dimension
-            aggregated_tokens_list, ps_idx = model.aggregator(images)
-
-        # Predict Cameras
-        pose_enc = model.camera_head(aggregated_tokens_list)[-1]
-        # Extrinsic and intrinsic matrices, following OpenCV convention (camera from world)
-        extrinsic, intrinsic = pose_encoding_to_extri_intri(pose_enc, images.shape[-2:])
-        # Predict Depth Maps
-        depth_map, depth_conf = model.depth_head(aggregated_tokens_list, images, ps_idx)
-
-    extrinsic = extrinsic.squeeze(0).cpu().numpy()
-    intrinsic = intrinsic.squeeze(0).cpu().numpy()
-    depth_map = depth_map.squeeze(0).cpu().numpy()
-    depth_conf = depth_conf.squeeze(0).cpu().numpy()
-    return extrinsic, intrinsic, depth_map, depth_conf
-
-
 def demo_fn(args):
     # Print configuration
     print("Arguments:", vars(args))
@@ -251,6 +223,11 @@ def demo_fn(args):
 
     # Bundle Adjustment
     ba_options = pycolmap.BundleAdjustmentOptions()
+    # Control which parameters are optimized
+    ba_options.refine_focal_length = False
+    ba_options.refine_principal_point = False
+    ba_options.refine_extra_params = False   # distortion params
+    ba_options.refine_extrinsics = True      # still refine R|t
     pycolmap.bundle_adjustment(reconstruction, ba_options)
 
     # Save point cloud for fast visualization
