@@ -263,7 +263,7 @@ def demo_fn(args):
 
         camera = reconstruction.cameras[image.camera_id]
         K = camera.calibration_matrix()
-        refined_intrinsic.append(K)
+        refined_intrinsic.append(K/scale)  # Scale back to 518
 
         # Get refined extrinsic (W2C Rigid3D format)
         W2C = image.cam_from_world.matrix()
