@@ -58,6 +58,8 @@ def predict_tracks(
     # Find query frames
     query_frame_indexes = generate_rank_by_dino(images, query_frame_num=query_frame_num, device=device)
 
+    print(f"Selected query frames: {query_frame_indexes}")
+
     # Add the first image to the front if not already present
     if 0 in query_frame_indexes:
         query_frame_indexes.remove(0)

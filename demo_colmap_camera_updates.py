@@ -222,18 +222,7 @@ def demo_fn(args):
         raise ValueError("No reconstruction can be built with BA even with relaxed settings")
 
     # Bundle Adjustment
-    ba_options = pycolmap.BundleAdjustmentOptions()
-    # Control which parameters are optimized
-    ba_options.refine_focal_length = False
-    ba_options.refine_principal_point = False
-    ba_options.refine_extra_params = False   # distortion params
-    ba_options.refine_extrinsics = True      # still refine R|t
-
-# 2. Mark cameras as constant (this really freezes intrinsics)
-    for cam in reconstruction.cameras.values():
-        cam.is_constant = True
-
-
+    ba_options = pycolmap.BundleAdjustmentOptions()   
     pycolmap.bundle_adjustment(reconstruction, ba_options)
 
     # Save point cloud for fast visualization
@@ -241,6 +230,7 @@ def demo_fn(args):
 
     refined_extrinsic=[]
     refined_intrinsic=[]
+    refined_depth = []
 
     for image in reconstruction.images.values():
 
@@ -251,7 +241,12 @@ def demo_fn(args):
         # Get refined extrinsic (W2C Rigid3D format)
         W2C = image.cam_from_world.matrix()
         refined_extrinsic.append(W2C)
-    
+
+    # Convert depth map to 3D points in world coordinates
+        #points = depth_to_points(depth_map, K, W2C)
+        #depth = project_points(points, K, W2C)
+        #refined_depth.append(depth)
+
     ####################### Save updated extrinsics and intrinsics
     
     # Save refined poses
@@ -294,7 +289,9 @@ def demo_fn(args):
 
     # attempt reconstruction again 
     print("Validating refined cameras by attempting reconstruction again...")
-    points_3d_1 = unproject_depth_map_to_point_map(depth_map, refined_extrinsic, refined_intrinsic)
+
+
+    points_3d_1 = unproject_depth_map_to_point_map(refined_depth, refined_extrinsic, refined_intrinsic)
     refined_intrinsics_scale = refined_intrinsic.copy()
     refined_intrinsics_scale[:, :2, :] *= scale
 
@@ -317,7 +314,6 @@ def demo_fn(args):
                 raise ValueError(f"Unknown predict_tracks_type: {args.predict_tracks_type}")
 
         torch.cuda.empty_cache()
-
 
     # Re-evaluate track masks with refined visibility scores
     refined_adaptive_mask = pred_vis_scores_refined > vis_th  # Use the successful vis_th from BA loop
@@ -395,6 +391,47 @@ def rename_colmap_recons_and_rescale_camera(
             rescale_camera = False
 
     return reconstruction
+
+
+
+
+def depth_to_points(depth_map, K, W2C):
+    H, W = depth_map.shape
+    i, j = np.meshgrid(np.arange(W), np.arange(H))  # pixel coords
+    pixels_h = np.stack([i, j, np.ones_like(i)], axis=-1).reshape(-1, 3).T  # [3, N]
+
+    # backproject to camera coordinates
+    K_inv = np.linalg.inv(K)
+    rays = K_inv @ pixels_h  # [3, N]
+    rays /= rays[2, :]  # normalize z=1
+
+    depths = depth_map.reshape(-1)
+    X_cam = rays * depths  # [3, N]
+
+    # transform to world
+    R = W2C[:, :3]
+    t = W2C[:, 3]
+    C2W = np.eye(4)
+    C2W[:3, :3] = R.T
+    C2W[:3, 3] = -R.T @ t
+
+    X_cam_h = np.vstack([X_cam, np.ones_like(depths)])
+    X_world = C2W @ X_cam_h
+    return X_world[:3].T  # [N, 3]
+
+
+def project_points(X_world, K, W2C):
+    # X_world: [N, 3]
+    X_h = np.hstack([X_world, np.ones((X_world.shape[0], 1))]).T  # [4, N]
+
+    # transform to camera frame
+    X_cam = W2C @ X_h  # [3, N]
+
+    # project
+    uv_h = K @ X_cam
+    uv = (uv_h[:2] / uv_h[2]).T  # [N, 2]
+    depth = X_cam[2]             # Z in camera frame
+    return uv, depth
 
 
 if __name__ == "__main__":
