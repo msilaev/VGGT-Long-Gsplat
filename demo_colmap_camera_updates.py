@@ -33,7 +33,7 @@ from vggt.utils.helper import create_pixel_coordinate_grid, randomly_limit_trues
 from vggt.dependency.track_predict import predict_tracks
 from vggt.dependency.np_to_pycolmap import batch_np_matrix_to_pycolmap, batch_np_matrix_to_pycolmap_wo_track
 
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation 
 
 
 # TODO: add support for masks
@@ -307,14 +307,9 @@ def demo_fn(args):
         K = camera.calibration_matrix()
         refined_intrinsic.append(K)
 
-        # Get refined extrinsic (W2C format)        
-        quat = image.qvec
-        R = R.from_quat(quat[1], quat[2], quat[3], quat[0]).as_matrix()
-        t = image.tvec
-        W2C = np.eye(4)
-        W2C[:3, :3] = R
-        W2C[:3, 3] = t
-        refined_extrinsic.append(W2C[:3, :])
+        # Get refined extrinsic (W2C Rigid3D format)
+        W2C = image.cam_from_world()
+        refined_extrinsic.append(W2C)
     
     ####################### Save updated extrinsics and intrinsics
     
