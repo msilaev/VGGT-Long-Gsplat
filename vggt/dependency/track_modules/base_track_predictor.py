@@ -68,7 +68,7 @@ class BaseTrackerPredictor(nn.Module):
         if not self.fine:
             self.vis_predictor = nn.Sequential(nn.Linear(self.latent_dim, 1))
 
-    def forward(self, query_points, fmaps=None, iters=4, return_feat=False, down_ratio=1):
+    def forward(self, query_points, fmaps=None, iters=4, return_feat=False, down_ratio=1, chunk_size=50):
         """
         query_points: B x N x 2, the number of batches, tracks, and xy
         fmaps: B x S x C x HH x WW, the number of batches, frames, and feature dimension.
@@ -101,20 +101,51 @@ class BaseTrackerPredictor(nn.Module):
 
         # Construct the correlation block
 
-        fcorr_fn = CorrBlock(fmaps, num_levels=self.corr_levels, radius=self.corr_radius)
+        #fcorr_fn = CorrBlock(fmaps, num_levels=self.corr_levels, radius=self.corr_radius)
 
         coord_preds = []
 
         # Iterative Refinement
         for itr in range(iters):
+            
             # Detach the gradients from the last iteration
             # (in my experience, not very important for performance)
             coords = coords.detach()
 
+            # Perform the tracking in chunks to save memory
+
+            all_fcorrs = []
+            
+            for chunk_start in range(0, S, chunk_size):
+                
+                chunk_end = min(chunk_start + chunk_size, S)
+
+                fmaps_chunk = fmaps[:, chunk_start:chunk_end]  # B, chunk, N, corrdim
+                track_feats_chunk = track_feats[:, chunk_start:chunk_end]  # B, chunk, N, C
+                coords_chunk = coords[:, chunk_start:chunk_end]  # B, chunk, N, 2
+
+                fcorr_fn_chunk = CorrBlock(fmaps_chunk, num_levels=self.corr_levels, radius=self.corr_radius)
+
+                fcorr_fn_chunk.corr(track_feats_chunk)
+                fcorrs_chunk = fcorr_fn_chunk.sample(coords_chunk)  # B, chunk, N, corrdim
+
+                all_fcorrs.append(fcorrs_chunk)
+                del fcorr_fn_chunk  # save memory
+                torch.cuda.empty_cache()
+            
+            fcorrs = torch.cat(all_fcorrs, dim=1)  # B, S, N, corrdim
+
+            #    if chunk_start == 0:
+            #        fcorrs = fcorrs_chunk
+            #    else:
+            #        fcorrs = torch.cat([fcorrs, fcorrs_chunk], dim=1)
+
+            #    del fcorrs_chunk  # save memory
+
             # Compute the correlation (check the implementation of CorrBlock)
 
-            fcorr_fn.corr(track_feats)  
-            fcorrs = fcorr_fn.sample(coords)  # B, S, N, corrdim
+           # fcorr_fn.corr(track_feats)  
+           # fcorrs = fcorr_fn.sample(coords)  # B, S, N, corrdim
 
             corrdim = fcorrs.shape[3]
 
