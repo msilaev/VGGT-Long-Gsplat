@@ -20,7 +20,7 @@ def predict_tracks(
     max_points_num=163840,
     fine_tracking=True,
     complete_non_vis=True,
-    batch_size=64,
+    batch_size=50,
 ):
     """
     Predict tracks for the given images and masks.
@@ -87,7 +87,8 @@ def predict_tracks(
 
     fmaps_for_tracker = []
     for b in range(0, len(images), batch_size):
-        b_images = images[b : b + batch_size]
+
+        b_images = images[b : max(b + batch_size, len(images))]
         print(f"Processing images {b} to {b + len(b_images)}")
 
         torch.cuda.empty_cache()
