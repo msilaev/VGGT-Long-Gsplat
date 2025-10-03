@@ -305,8 +305,8 @@ def demo_fn(args):
         K = camera.calibration_matrix()
         refined_intrinsic.append(K)
 
-        # Get refined extrinsic (W2C format)
-        R = image.rotation_matrix()
+        # Get refined extrinsic (W2C format)        
+        R = pycolmap.qvec_to_rotmat(image.qvec)
         t = image.tvec
         W2C = np.eye(4)
         W2C[:3, :3] = R
