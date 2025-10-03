@@ -338,10 +338,11 @@ def demo_fn(args):
     avg_pose_change = np.mean(pose_changes)/np.max(original_poses)
     max_pose_change = np.max(pose_changes)/np.max(original_poses)
 
-    rot_changes = [np.linalg.norm(Rot_rel) for Rot_rel in [pycolmap.rotmat_to_rotvec(ref[:3,:3] @ orig[:3,:3].T) for orig, ref in zip(extrinsic, refined_extrinsic)]]
+    rot_changes = [Rot_rel.magnitude() for Rot_rel in
+                   [Rotation.from_matrix(ref[:3,:3] @ orig[:3,:3].T) for orig, ref in zip(extrinsic, refined_extrinsic)]]
 
-    avg_rot_change = np.mean( rot_changes  )
-    max_rot_change = np.max( rot_changes  )
+    avg_rot_change = np.mean( np.abs(rot_changes) )
+    max_rot_change = np.max( rot_changes )
     print(f"Bundle adjustment pose refinement:")
     print(f"  Average pose change: {avg_pose_change:.6f}")
     print(f"  Maximum pose change: {max_pose_change:.6f}")
