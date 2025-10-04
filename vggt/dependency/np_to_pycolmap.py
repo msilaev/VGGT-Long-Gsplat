@@ -77,10 +77,18 @@ def batch_np_matrix_to_pycolmap(
         print(f"  Points behind camera: {(projected_points_cam[:, -1] <= 0).sum()}")
     print("Inliers per frame:", masks.sum(1).min(), "Min required:", min_inlier_per_frame)
 
-    if masks.sum(1).min() < min_inlier_per_frame:
+    frames_no_inliers = np.where(masks.sum(1) < min_inlier_per_frame)[0]
+    
+    if len(frames_no_inliers) > 0:
+        print(f"Frames with insufficient inliers (less than {min_inlier_per_frame}): {frames_no_inliers}")
+    
+    print("Proceeding with BA on all frames.")
+
+
+    #if masks.sum(1).min() < min_inlier_per_frame:
         
-        print(f"Not enough inliers per frame, skip BA.")
-        return None, None
+    #    print(f"Not enough inliers per frame, skip BA.")
+    #    return None, None
 
     # Reconstruction object, following the format of PyCOLMAP/COLMAP
     reconstruction = pycolmap.Reconstruction()
