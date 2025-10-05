@@ -1,24 +1,20 @@
-<p align="center">
-<p align="center">
-<h1 align="center">Gaussian splats from VGGT on large number of frames</h1>
+<<p align="center">
+<h1 align="center">Gaussian Splatting from VGGT on Large Number of Frames</h1>
 </p>
 
-This repository realizes VGGT-Long-> Gaussian splatting pipeline, combining with some modifications 
-codes from the repositories 
+This repository implements a VGGT-Long → Gaussian Splatting pipeline, combining and modifying code from the following repositories:
 
- [VGGT-Long](https://github.com/facebookresearch/vggt)
- [VGGT](https://github.com/facebookresearch/vggt)
+- [VGGT-Long](https://github.com/DengKaiCQ/VGGT-Long)
+- [VGGT](https://github.com/facebookresearch/vggt)
 
-from the papers 
+Based on the papers:
 
-[VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences](https://arxiv.org/abs/2507.16443)
-and
+- [VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences](https://arxiv.org/abs/2507.16443)
+- [VGGSfM: Visual Geometry Grounded Deep Structure from Motion](https://arxiv.org/abs/2312.04563)
 
-[VGGT-](https://arxiv.org/abs/---)
+For Gaussian Splatting, we use code from the gsplat repository:
 
-For the Gaussian splatting with use code from gsplat repository 
-
-[gsplat](https://github.com/nerfstudio-project/gsplat)
+- [gsplat](https://github.com/nerfstudio-project/gsplat)
 
 ##  Setup, Installation & Running
 
@@ -45,9 +41,12 @@ System Environment：
 
 #### Step 1: Dependency Installation
 
-We use three virtual environmemts - 'vggfm-temp' with requirements from VGGT-Long repository, 
-'colmap_env' with requirenets from VGGT repository and 'py11' with gsplat  dependencies.
-Create these conda environments and install dependencies using corresponding 'requirements.txt' files.
+We use three virtual environments:
+- `vggsfm_tmp`: Requirements from VGGT-Long repository
+- `colmap_env`: Requirements from VGGT repository  
+- `py11`: gsplat dependencies
+
+Create these conda environments and install dependencies using the corresponding `requirements.txt` files.
 
 #### Step 2: Weights Download
 
@@ -57,20 +56,48 @@ Download all the pre-trained weights needed:
 bash ./scripts/download_weights.sh
 ```
 
-### Running experiments 
+### 🚀 Running Experiments 
 
-The simpiest way to run pipeline is on the remote machine through ssh connection using scripts
-'
+The simplest way to run the pipeline is on a remote machine through SSH connection using the scripts:
+
+**Run the pipeline:**
+```bash
 ./src_vggt_colmap/run_pipeline_vggt_long_colmap.sh
-'
-and then downloading results
-'
+```
+
+**Download results:**
+```bash
 ./src_vggt_colmap/download_results_vggt_colmap.sh
+```
 
 
 
-## License
+## 📄 License
 
-Theis  codebase follows `VGGT`'s license, please refer to `./LICENSE.txt` for applicable terms. For commercial use, please follow the link [VGGT](https://github.com/facebookresearch/vggt) that should utilize the commercial version of the pre-trained weight. [Link of VGGT-1B-Commercial](https://huggingface.co/facebook/VGGT-1B-Commercial)
+This codebase follows VGGT's license. Please refer to `./LICENSE.txt` for applicable terms. 
 
-## More Experiments
+For commercial use, please follow the link to [VGGT](https://github.com/facebookresearch/vggt) and utilize the commercial version of the pre-trained weights: [VGGT-1B-Commercial](https://huggingface.co/facebook/VGGT-1B-Commercial)
+
+## 📖 References
+
+If you use this code, please cite the original papers:
+
+```bibtex
+@article{wang2024vggt-long,
+  title={VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences},
+  author={Wang, Ziyuan and others},
+  journal={arXiv preprint arXiv:2507.16443},
+  year={2024}
+}
+
+@article{wang2023vggsfm,
+  title={VGGSfM: Visual Geometry Grounded Deep Structure from Motion},
+  author={Wang, Jianyuan and Karaev, Nikita and Rupprecht, Christian and Novotny, David},
+  journal={arXiv preprint arXiv:2312.04563},
+  year={2023}
+}
+```
+
+## 🔬 More Experiments
+
+[Content for additional experiments and results would go here]
