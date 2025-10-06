@@ -7,11 +7,11 @@ set -e  # Exit on error
 #  echo "Usage: $0 IMAGE_DIR"
 #  exit 1
 #fi
-WORKDIR="/home/GAUSSIAN-SPLATTING/experiments"
+WORKDIR="/home/hdd/mikhail/GAUSSIAN-SPLATTING/experiments"
 
 echo "--WORKDIR: $WORKDIR"
 
-COLMAP_WORKSPACE="$WORKDIR/IMAGES_DIR_vgg_long_colmap/images"
+COLMAP_WORKSPACE="$WORKDIR/IMAGES_DIR_colmap/images"
 UNDISTORTED_COLMAP_OUTPUT="${COLMAP_WORKSPACE}_undistorted"
 IMAGE_DIR="${COLMAP_WORKSPACE}"
 TRAIN_SCRIPT="train.py"
@@ -28,13 +28,13 @@ echo "Image dir: $IMAGE_DIR"
 
 colmap image_undistorter \
     --image_path "$IMAGE_DIR" \
-    --input_path "$IMAGE_DIR/sparse" \
+    --input_path "$IMAGE_DIR/sparse/0" \
     --output_path "$UNDISTORTED_COLMAP_OUTPUT" \
     --output_type COLMAP \
     --max_image_size 2000
 
 # --- Copy DB and Convert Sparse Model ---
-#cp "$IMAGE_DIR/database.db" "$UNDISTORTED_COLMAP_OUTPUT/"
+cp "$IMAGE_DIR/database.db" "$UNDISTORTED_COLMAP_OUTPUT/"
 
 mkdir -p "$UNDISTORTED_COLMAP_OUTPUT/sparse/0_txt"
 

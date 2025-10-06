@@ -56,10 +56,10 @@ def predict_tracks(
     dtype = images.dtype
     tracker = build_vggsfm_tracker().to(device, dtype)
 
-    # Find query frames
+    # Original: Find query frames
     #query_frame_indexes = generate_rank_by_dino(images, query_frame_num=query_frame_num, device=device)
 
-    # Example: seed every 10th frame
+    # New: seed every 3rd frame
     query_frame_indexes = list(range(0, len(images), 3))
 
     # Or: seed from all frames

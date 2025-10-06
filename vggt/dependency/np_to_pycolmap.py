@@ -81,10 +81,7 @@ def batch_np_matrix_to_pycolmap(
     
     if len(frames_no_inliers) > 0:
         print(f"Frames with insufficient inliers (less than {min_inlier_per_frame}): {frames_no_inliers}")
-    
-    print("Proceeding with BA on all frames.")
-
-
+        
     if masks.sum(1).min() < min_inlier_per_frame:
         
         print(f"Not enough inliers per frame, skip BA.")
