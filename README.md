@@ -1,22 +1,78 @@
+# 🎯 Gaussian Splatting from VGGT on Large Number of Frames
+
 <p align="center">
-<h1 align="center">Gaussian Splatting from VGGT on Large Number of Frames</h1>
+  <img src="assets/gs_images/VGGT_LONG/garden/frame_0015.png" alt="VGGT Gaussian Splatting Example" width="600">
 </p>
 
-This repository implements a VGGT-Long → Gaussian Splatting pipeline, combining and modifying code from the following repositories:
+This repository implements a **VGGT-Long → Gaussian Splatting** pipeline, combining and modifying code from the following repositories:
 
 - [VGGT-Long](https://github.com/DengKaiCQ/VGGT-Long)
 - [VGGT](https://github.com/facebookresearch/vggt)
 
 Based on the papers:
 
-- [VGGT-Long: Chunk it, Loop it, Align it -- Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences](https://arxiv.org/abs/2507.16443)
-- [VGGSfM: Visual Geometry Grounded Deep Structure from Motion](https://arxiv.org/abs/2312.04563)
+- [VGGT-Long: *Chunk it, Loop it, Align it — Pushing VGGT's Limits on Kilometer-scale Long RGB Sequences*](https://arxiv.org/abs/2507.16443)
+- [VGGSfM: *Visual Geometry Grounded Deep Structure from Motion*](https://arxiv.org/abs/2312.04563)
 
-For Gaussian Splatting, we use code from the gsplat repository:
+For Gaussian Splatting, this project uses code from:
 
 - [gsplat](https://github.com/nerfstudio-project/gsplat)
 
-## Setup, Installation & Running
+---
+
+## 📊 Comparison: COLMAP vs VGGT-Long based Gaussian Splatting
+
+### Full Frame Example
+
+| COLMAP | VGGT-Long |
+|:------:|:----------:|
+| ![COLMAP full](assets/gs_images/COLMAP/garden/frame_0015.png) | ![VGGT full](assets/gs_images/VGGT_LONG/garden/frame_0015.png) |
+
+### Cropped Region
+
+| COLMAP | VGGT-Long |
+|:------:|:----------:|
+| ![COLMAP crop](assets/gs_images/COLMAP/garden/frame_crop_0015.png) | ![VGGT crop](assets/gs_images/VGGT_LONG/garden/frame_crop_0015.png) |
+
+---
+
+### 📉 Training Loss
+
+<p align="center">
+  <img src="assets/gs_images/loss_github.png" alt="Training loss" width="600">
+</p>
+
+---
+
+
+### Metrics and computation time
+
+| **Pipeline** | **Scene** | **Time (s)** | **GS Start** | **GS Result** | **PSNR**   | **SSIM**   | **LPIPS** |
+| ------------ | --------- | ------------ | ------------ | ------------- | ---------- | ---------- | --------- |
+| COLMAP       | bonsai    | 1184         | 261,255      | 2,197,821     | **30.891** | **0.9387** | **0.142** |
+| VGGT-LONG    | bonsai    | 2069         | 108,500      | 2,017,883     | 29.419     | 0.9009     | 0.179     |
+| COLMAP       | kitchen   | 1741         | 290,444      | 1,860,121     | **31.463** | **0.9323** | **0.097** |
+| VGGT-LONG    | kitchen   | 1437         | 46,788       | 1,890,648     | 24.967     | 0.7852     | 0.212     |
+| COLMAP       | ignatius  | 731          | 209,541      | 4,366,405     | **20.477** | **0.7050** | **0.241** |
+| VGGT-LONG    | ignatius  | 898          | 51,193       | 3,193,499     | 18.263     | 0.4959     | 0.448     |
+| COLMAP       | garden    | 500          | 207,923      | 6,388,310     | **27.537** | **0.8606** | **0.098** |
+| VGGT-LONG    | garden    | 695          | 43,006       | 5,436,518     | 24.103     | 0.7092     | 0.208     |
+
+
+Table  presents a comparison between the COLMAP and VGGT-LONG reconstruction pipelines across several scenes from 
+usual NeRF 360 benchmarks + Ignatius scene from https://www.tanksandtemples.org/
+Each experiment reports the total computation time to produce sparse model, the initial and resulting number of Gaussian splats (GS), and three common image quality metrics — PSNR, SSIM, and LPIPS.
+
+Overall, COLMAP generally produces higher reconstruction quality, indicated by higher PSNR and SSIM values and lower LPIPS, particularly for the bonsai and kitchen scenes.
+However, VGGT-LONG tends to generate reconstructions starting from a smaller Gaussian set and sometimes results in a denser splat distribution, suggesting a different optimization and density allocation strategy.
+
+Execution times vary across scenes: in some cases, VGGT-LONG takes longer despite lower perceptual fidelity, illustrating inherent trade-offs between computational efficiency and reconstruction accuracy across the two methods.
+
+## ⚙️ Setup, Installation & Running
+
+### 🖥️ 1. Hardware and System Environment
+
+*(Describe GPU/OS/requirements here, e.g. CUDA version, Python environment, etc.)*
 
 ### 🖥️ 1. Hardware and System Environment
 
@@ -173,28 +229,6 @@ The simplest way to run the pipeline is on a remote machine through SSH connecti
 ./src_metrics/collect_metrics.sh
 ```
 
-## Results
-
-| **Pipeline** | **Scene** | **Time (s)** | **GS Start** | **GS Result** | **PSNR**   | **SSIM**   | **LPIPS** |
-| ------------ | --------- | ------------ | ------------ | ------------- | ---------- | ---------- | --------- |
-| COLMAP       | bonsai    | 1184         | 261,255      | 2,197,821     | **30.891** | **0.9387** | **0.142** |
-| VGGT-LONG    | bonsai    | 2069         | 108,500      | 2,017,883     | 29.419     | 0.9009     | 0.179     |
-| COLMAP       | kitchen   | 1741         | 290,444      | 1,860,121     | **31.463** | **0.9323** | **0.097** |
-| VGGT-LONG    | kitchen   | 1437         | 46,788       | 1,890,648     | 24.967     | 0.7852     | 0.212     |
-| COLMAP       | ignatius  | 731          | 209,541      | 4,366,405     | **20.477** | **0.7050** | **0.241** |
-| VGGT-LONG    | ignatius  | 898          | 51,193       | 3,193,499     | 18.263     | 0.4959     | 0.448     |
-| COLMAP       | garden    | 500          | 207,923      | 6,388,310     | **27.537** | **0.8606** | **0.098** |
-| VGGT-LONG    | garden    | 695          | 43,006       | 5,436,518     | 24.103     | 0.7092     | 0.208     |
-
-
-Table  presents a comparison between the COLMAP and VGGT-LONG reconstruction pipelines across several scenes from 
-usual NeRF 360 benchmarks + Ignatius scene from https://www.tanksandtemples.org/
-Each experiment reports the total computation time to produce sparse model, the initial and resulting number of Gaussian splats (GS), and three common image quality metrics — PSNR, SSIM, and LPIPS.
-
-Overall, COLMAP generally produces higher reconstruction quality, indicated by higher PSNR and SSIM values and lower LPIPS, particularly for the bonsai and kitchen scenes.
-However, VGGT-LONG tends to generate reconstructions starting from a smaller Gaussian set and sometimes results in a denser splat distribution, suggesting a different optimization and density allocation strategy.
-
-Execution times vary across scenes: in some cases, VGGT-LONG takes longer despite lower perceptual fidelity, illustrating inherent trade-offs between computational efficiency and reconstruction accuracy across the two methods.
 ## 📄 License
 
 This codebase follows VGGT's license. Please refer to `./LICENSE.txt` for applicable terms.
