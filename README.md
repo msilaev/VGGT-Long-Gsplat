@@ -1,8 +1,5 @@
 # 🎯 Gaussian Splatting from VGGT on Large Number of Frames
 
-<p align="center">
-  <img src="assets/gs_images/VGGT_LONG/garden/frame_0015.png" alt="VGGT Gaussian Splatting Example" width="600">
-</p>
 
 This repository implements a **VGGT-Long → Gaussian Splatting** pipeline, combining and modifying code from the following repositories:
 
@@ -22,6 +19,7 @@ For Gaussian Splatting, this project uses code from:
 
 ## 📊 Comparison: COLMAP vs VGGT-Long based Gaussian Splatting
 
+Datasets [Mip-NeRF 360](https://jonbarron.info/mipnerf360/)  and [Tanks and Temples](https://www.tanksandtemples.org/)
 ### Full Frame Example
 
 | COLMAP | VGGT-Long |
