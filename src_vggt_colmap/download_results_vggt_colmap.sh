@@ -13,7 +13,7 @@ WORKDIR="/home/hdd/mikhail/GAUSSIAN-SPLATTING"
 GSPLAT_OUTPUT_DIR="GSPLAT_OUTPUT_DIR_vggtlong"
 IMAGE_DIR="bonsai"
 IMAGE_DIR_REMOTE="IMAGES_DIR_vgg_long_colmap"
-SAVE_DIR="/worktmp/THESES/GAUSSIAN-SPLATTING/experiments/RESULTS/VGGT_LONG/$IMAGE_DIR/"
+SAVE_DIR="/worktmp/GAUSSIAN-SPLATTING/experiments/RESULTS/VGGT_LONG/$IMAGE_DIR/"
 
 
 rm -rf "$SAVE_DIR"
@@ -25,7 +25,7 @@ rsync -avz "$REMOTE_USER@$REMOTE_HOST:$WORKDIR/gsplat/examples/results/$GSPLAT_O
 rsync -avz "$REMOTE_USER@$REMOTE_HOST:$WORKDIR/gsplat/examples/results/$GSPLAT_OUTPUT_DIR/videos" $SAVE_DIR
 
 
-WORKDIR="/home/hdd/mikhail/GAUSSIAN-SPLATTING/experiments"
+WORKDIR="/home/GAUSSIAN-SPLATTING/experiments"
 rsync -avz "$REMOTE_USER@$REMOTE_HOST:$WORKDIR/$IMAGE_DIR_REMOTE/pipeline.log" "$SAVE_DIR/"
 
 rsync -avz "$REMOTE_USER@$REMOTE_HOST:$WORKDIR/$IMAGE_DIR_REMOTE/images_undistorted/sparse" "$SAVE_DIR"
