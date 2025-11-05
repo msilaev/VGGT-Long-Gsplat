@@ -32,7 +32,10 @@ Datasets [Mip-NeRF 360](https://jonbarron.info/mipnerf360/)  and [Tanks and Temp
 |:------:|:----------:|
 | ![COLMAP crop](assets/gs_images/COLMAP/garden/frame_crop_0015.png) | ![VGGT crop](assets/gs_images/VGGT_LONG/garden/frame_crop_0015.png) |
 
+**More examples:** [Open examples page](docs/examples.md)
+
 ---
+
 
 ### 📉 Training Loss
 
