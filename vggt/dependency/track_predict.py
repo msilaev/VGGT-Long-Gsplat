@@ -60,7 +60,7 @@ def predict_tracks(
     #query_frame_indexes = generate_rank_by_dino(images, query_frame_num=query_frame_num, device=device)
 
     # New: seed every 3rd frame
-    query_frame_indexes = list(range(0, len(images), 3))
+    query_frame_indexes = list(range(0, len(images), 1))
 
     # Or: seed from all frames
     # query_frame_indexes = list(range(len(images)))
