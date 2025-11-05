@@ -19,13 +19,13 @@ This page shows side-by-side comparisons used in the README. Image paths are rel
 # Kitchen scene from [Mip-NeRF 360](https://jonbarron.info/mipnerf360/)  
 ## Full frame example
 
-|                               COLMAP                               |                              VGGT‑Long                              |
-|:------------------------------------------------------------------:|:-------------------------------------------------------------------:|
-| ![COLMAP full](../assets/gs_images/COLMAP/ignatius/frame_0001.png) | ![VGGT full](../assets/gs_images/VGGT_LONG/ignatius/frame_0001.png) |
+|                              COLMAP                               |                             VGGT‑Long                              |
+|:-----------------------------------------------------------------:|:------------------------------------------------------------------:|
+| ![COLMAP full](../assets/gs_images/COLMAP/kitchen/frame_0001.png) | ![VGGT full](../assets/gs_images/VGGT_LONG/kitchen/frame_0001.png) |
 
 ## Cropped region
 
-|                              COLMAP (crop)                              |                             VGGT‑Long (crop)                             |
-|:-----------------------------------------------------------------------:|:------------------------------------------------------------------------:|
-| ![COLMAP crop](../assets/gs_images/COLMAP/ignatius/frame_crop_0001.png) | ![VGGT crop](../assets/gs_images/VGGT_LONG/ignatius/frame_crop_0001.png) |
+|                             COLMAP (crop)                              |                            VGGT‑Long (crop)                             |
+|:----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|
+| ![COLMAP crop](../assets/gs_images/COLMAP/kitchen/frame_crop_0001.png) | ![VGGT crop](../assets/gs_images/VGGT_LONG/kitchen/frame_crop_0001.png) |
 
