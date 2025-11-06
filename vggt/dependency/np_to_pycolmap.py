@@ -82,17 +82,56 @@ def batch_np_matrix_to_pycolmap(
     if len(frames_no_inliers) > 0:
         print(f"Frames with insufficient inliers (less than {min_inlier_per_frame}): {frames_no_inliers}")
         
-    if masks.sum(1).min() < min_inlier_per_frame:
-        
-        print(f"Not enough inliers per frame, skip BA.")
-        return None, None
+    #if masks.sum(1).min() < min_inlier_per_frame:
+    #    
+    #    print(f"Not enough inliers per frame, skip BA.")
+    #    return None, None
+########################################3
+        # --- drop frames that have too few inliers and continue ---
+        keep_frames = np.where(masks.sum(1) >= min_inlier_per_frame)[0]
+        if len(keep_frames) < 2:
+            print(f"Too few frames remaining after exclusion ({len(keep_frames)}). Skip BA.")
+            return None, None
 
+        print(f"Proceeding by keeping {len(keep_frames)} frames: {keep_frames}")
+
+        # subset per-frame data
+        extrinsics = extrinsics[keep_frames]
+        intrinsics = intrinsics[keep_frames]
+        tracks = tracks[keep_frames]   # tracks: (N, P, 2) -> (N', P, 2)
+        masks = masks[keep_frames]     # masks: (N, P) -> (N', P)
+
+        # recompute per-track inlier counts and drop tracks with <2 observations
+        inlier_num = masks.sum(0)
+        valid_mask = inlier_num >= 2
+        valid_idx = np.nonzero(valid_mask)[0]
+
+        if len(valid_idx) == 0:
+            print("No tracks left after dropping bad frames. Skip BA.")
+            return None, None
+
+        # keep only valid 3D points and corresponding per-track data
+        points3d = points3d[valid_idx]
+        if points_rgb is not None:
+            points_rgb = points_rgb[valid_idx]
+        tracks = tracks[:, valid_idx, :]
+        masks = masks[:, valid_idx]
+        # update N and related variables for downstream logic
+        N = tracks.shape[0]
+        P = tracks.shape[1]
+    else:
+        # original path: compute inlier_num and valid_idx as before
+        inlier_num = masks.sum(0)
+        valid_mask = inlier_num >= 2  # a track is invalid if without two inliers
+        valid_idx = np.nonzero(valid_mask)[0]
+
+###########################################
     # Reconstruction object, following the format of PyCOLMAP/COLMAP
     reconstruction = pycolmap.Reconstruction()
 
-    inlier_num = masks.sum(0)
-    valid_mask = inlier_num >= 2  # a track is invalid if without two inliers
-    valid_idx = np.nonzero(valid_mask)[0]
+    #inlier_num = masks.sum(0)
+    #valid_mask = inlier_num >= 2  # a track is invalid if without two inliers
+    #valid_idx = np.nonzero(valid_mask)[0]
 
     # Only add 3D points that have sufficient 2D points
     for vidx in valid_idx:
