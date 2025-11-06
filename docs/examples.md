@@ -36,13 +36,13 @@ This page shows side-by-side comparisons used in the README. Image paths are rel
 
 |                              COLMAP                               |                             VGGT‑Long                              |
 |:-----------------------------------------------------------------:|:------------------------------------------------------------------:|
-| ![COLMAP full](../assets/gs_images/COLMAP/bycicle/frame_0019.png) | ![VGGT full](../assets/gs_images/VGGT_LONG/bycicle/frame_0019.png) |
+| ![COLMAP full](../assets/gs_images/COLMAP/bycicle/frame_0018.png) | ![VGGT full](../assets/gs_images/VGGT_LONG/bycicle/frame_0019.png) |
 
 ## Cropped region
 
 |                             COLMAP (crop)                              |                            VGGT‑Long (crop)                             |
 |:----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|
-| ![COLMAP crop](../assets/gs_images/COLMAP/bycicle/frame_crop_0019.png) | ![VGGT crop](../assets/gs_images/VGGT_LONG/bycicle/frame_crop_0019.png) |
+| ![COLMAP crop](../assets/gs_images/COLMAP/bycicle/frame_crop_0018.png) | ![VGGT crop](../assets/gs_images/VGGT_LONG/bycicle/frame_crop_0019.png) |
 
 
 
