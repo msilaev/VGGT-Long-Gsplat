@@ -31,6 +31,20 @@ This page shows side-by-side comparisons used in the README. Image paths are rel
 
 
 
+# Bycicle scene from [Mip-NeRF 360](https://jonbarron.info/mipnerf360/)  
+## Full frame example
+
+|                              COLMAP                               |                             VGGT‑Long                              |
+|:-----------------------------------------------------------------:|:------------------------------------------------------------------:|
+| ![COLMAP full](../assets/gs_images/COLMAP/bycicle/frame_0019.png) | ![VGGT full](../assets/gs_images/VGGT_LONG/bycicle/frame_0019.png) |
+
+## Cropped region
+
+|                             COLMAP (crop)                              |                            VGGT‑Long (crop)                             |
+|:----------------------------------------------------------------------:|:-----------------------------------------------------------------------:|
+| ![COLMAP crop](../assets/gs_images/COLMAP/bycicle/frame_crop_0019.png) | ![VGGT crop](../assets/gs_images/VGGT_LONG/bycicle/frame_crop_0019.png) |
+
+
 
 # Kitchen scene from [Mip-NeRF 360](https://jonbarron.info/mipnerf360/)  
 ## Full frame example
